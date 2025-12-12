@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://motolinkuser:motolinkpassword@db:5432/public
+    depends_on:
+      - db
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: motolinkuser
+      POSTGRES_PASSWORD: motolinkpassword
+      POSTGRES_DB: public
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
+    driver: local
