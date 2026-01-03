@@ -1,0 +1,17 @@
+name: create
+method: POST
+url: $API_URL/api/users
+body:
+  content: |-
+    {
+      "email": "admin@gmail.com",
+      "password": "1234567Aa!",
+      "name": "ADMIN",
+      "role": "ADMIN"
+    }
+  content_type: application/json
+headers:
+- name: Authorization
+  value: 210990Ea!
+- name: content-type
+  value: application/json
