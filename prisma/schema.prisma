@@ -74,6 +74,7 @@ model Client {
   groupId       String?
   group         Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
   contactName   String
+  branch        String      @default("")
   createdBy     String?
   createdByUser User?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   updatedAt     DateTime    @updatedAt
@@ -97,6 +98,7 @@ model Deliveryman {
   vehicleModel String
   vehiclePlate String
   vehicleColor String
+  branch       String      @default("")
   regionId     String?
   region       Region?     @relation(fields: [regionId], references: [id], onDelete: SetNull)
   updatedAt    DateTime    @updatedAt
@@ -110,6 +112,7 @@ model Group {
   id            String   @id @default(uuid(7))
   name          String
   description   String?
+  branch        String   @default("")
   createdBy     String?
   createdByUser User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   updatedAt     DateTime @updatedAt
@@ -123,6 +126,7 @@ model Region {
   id            String        @id @default(uuid(7))
   name          String
   description   String?
+  branch        String        @default("")
   createdBy     String?
   createdByUser User?         @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   updatedAt     DateTime      @updatedAt
@@ -149,6 +153,7 @@ model WorkShift {
   endTime       DateTime
   auditStatus   String
   logs          Json[]
+  branch        String       @default("")
   updatedAt     DateTime     @updatedAt
   createdAt     DateTime     @default(now())
 

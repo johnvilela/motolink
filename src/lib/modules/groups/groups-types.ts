@@ -13,6 +13,7 @@ export const MutateGroupSchema = z.object({
     .min(3, { message: "Descrição deve conter no mínimo 3 caracteres" })
     .max(255, { message: "Descrição deve conter no máximo 255 caracteres" })
     .optional(),
+  branch: z.string().default(""),
   createdBy: z.string().optional(),
 });
 
