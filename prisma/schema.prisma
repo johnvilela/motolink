@@ -8,16 +8,20 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(uuid(7))
-  name        String
-  email       String    @unique
-  password    String
-  image       String?
-  role        String    @default("USER")
-  permissions String[]  @default([])
-  sessions    Session[]
-  updatedAt   DateTime  @updatedAt
-  createdAt   DateTime  @default(now())
+  id                 String              @id @default(uuid(7))
+  name               String
+  email              String              @unique
+  password           String?
+  status             String              @default("PENDING")
+  image              String?
+  role               String              @default("USER")
+  permissions        String[]            @default([])
+  branchs            String[]            @default([])
+  isDeleted          Boolean             @default(false)
+  sessions           Session[]
+  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime            @default(now())
+  verificationTokens VerificationToken[]
 
   @@map("users")
 }
@@ -34,4 +38,15 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+model VerificationToken {
+  id        String   @default(uuid(7))
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("verification_tokens")
 }

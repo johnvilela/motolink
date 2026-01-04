@@ -1,17 +1,13 @@
-import { UserTypes } from "../constants/user-types";
+import { userRoles } from "../modules/users/users-constants";
 
 export const redirectByRole = (userRole: string) => {
-  if (userRole === UserTypes.ADMIN) {
+  if (userRole === userRoles.ADMIN) {
     return "/app/admin/dashboard";
   }
 
-  if (userRole === UserTypes.HR) {
-    return "/app/hr";
-  }
-
-  if (userRole === UserTypes.USER) {
+  if (userRole === userRoles.USER) {
     return "/app/dashboard";
   }
 
-  return "/app/desconhecido";
+  return "/app/dashboard";
 };
