@@ -22,6 +22,11 @@ model User {
   updatedAt          DateTime            @updatedAt
   createdAt          DateTime            @default(now())
   verificationTokens VerificationToken[]
+  clients            Client[]
+  groups             Group[]
+  regions            Region[]
+  workShifts         WorkShift[]
+  historyTraces      HistoryTrace[]
 
   @@map("users")
 }
@@ -49,4 +54,116 @@ model VerificationToken {
   createdAt DateTime @default(now())
 
   @@map("verification_tokens")
+}
+
+model Client {
+  id            String      @id @default(uuid(7))
+  name          String
+  paymentForm   String[]    @default([])
+  periods       String[]    @default([])
+  cnpj          String
+  cep           String
+  street        String
+  number        String
+  complement    String
+  city          String
+  neighborhood  String
+  uf            String
+  regionId      String?
+  region        Region?     @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  groupId       String?
+  group         Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  contactName   String
+  createdBy     String?
+  createdByUser User?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
+  workShifts    WorkShift[]
+
+  @@map("clients")
+}
+
+model Deliveryman {
+  id           String      @id @default(uuid(7))
+  name         String
+  document     String
+  phone        String
+  contractType String
+  mainPixKey   String
+  secondPixKey String
+  thridPixKey  String
+  agency       String
+  account      String
+  vehicleModel String
+  vehiclePlate String
+  vehicleColor String
+  regionId     String?
+  region       Region?     @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime    @default(now())
+  workShifts   WorkShift[]
+
+  @@map("deliverymen")
+}
+
+model Group {
+  id            String   @id @default(uuid(7))
+  name          String
+  description   String
+  createdBy     String?
+  createdByUser User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  clients       Client[]
+
+  @@map("groups")
+}
+
+model Region {
+  id            String        @id @default(uuid(7))
+  name          String
+  description   String
+  createdBy     String?
+  createdByUser User?         @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime      @default(now())
+  clients       Client[]
+  deliverymans  Deliveryman[]
+
+  @@map("regions")
+}
+
+model WorkShift {
+  id            String       @id @default(uuid(7))
+  deliverymanId String?
+  deliveryman   Deliveryman? @relation(fields: [deliverymanId], references: [id], onDelete: SetNull)
+  clientId      String
+  client        Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy     String?
+  createdByUser User?        @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  isPlanned     Boolean
+  status        String
+  contractType  String
+  shiftDate     DateTime
+  startTime     DateTime
+  endTime       DateTime
+  auditStatus   String
+  logs          Json[]
+  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime     @default(now())
+
+  @@map("work_shifts")
+}
+
+model HistoryTrace {
+  id         String   @id @default(uuid(7))
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String
+  entityId   String
+  changes    Json
+  createdAt  DateTime @default(now())
+
+  @@map("history_traces")
 }
