@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
-import { UserForm } from "@/components/forms/user-form";
+import { GroupForm } from "@/components/forms/group-form";
 import { AppContentHeader } from "@/components/ui/app-layout/app-content-header";
 import { Heading } from "@/components/ui/heading";
 import { getUserLogged } from "@/lib/modules/users/users-actions";
 import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
 
-export default async function NewColaboratorPage() {
+export default async function NewGroupPage() {
   const user = await getUserLogged();
 
-  const canCreateUser = checkUserPermissions(user, ["employee.create"]);
+  const canCreateGroup = checkUserPermissions(user, ["manager.create"]);
 
-  if (!canCreateUser) {
+  if (!canCreateGroup) {
     return redirect("/app/sem-permissao");
   }
 
@@ -19,17 +19,15 @@ export default async function NewColaboratorPage() {
       <AppContentHeader
         breadcrumbItems={[
           {
-            title: "Colaboradores",
-            href: "/app/colaboradores",
+            title: "Gestão de Grupos",
+            href: "/app/gestao/grupos",
           },
-          {
-            title: "Novo Colaborador",
-          },
+          { title: "Novo Grupo" },
         ]}
       />
       <main className="container mx-auto py-10">
-        <Heading variant="h2">Cadastrar Colaborador</Heading>
-        <UserForm user={user} />
+        <Heading variant="h2">Cadastrar Grupo</Heading>
+        <GroupForm user={user} />
       </main>
     </>
   );

@@ -1,6 +1,7 @@
 import {
   Bell,
   ChevronRight,
+  CirclePlus,
   Handshake,
   Landmark,
   LayoutDashboard,
@@ -54,6 +55,18 @@ const items = [
       {
         title: "Monitoramento",
         url: "/operacional/monitoramento",
+      },
+    ],
+  },
+  {
+    title: "Gestão",
+    isActive: false,
+    icon: CirclePlus,
+    requiredPermission: "manager.view",
+    items: [
+      {
+        title: "Grupos",
+        url: "/gestao/grupos",
       },
     ],
   },

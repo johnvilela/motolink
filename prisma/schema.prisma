@@ -109,7 +109,7 @@ model Deliveryman {
 model Group {
   id            String   @id @default(uuid(7))
   name          String
-  description   String
+  description   String?
   createdBy     String?
   createdByUser User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   updatedAt     DateTime @updatedAt

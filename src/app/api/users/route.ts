@@ -1,5 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { usersService } from "@/lib/modules/users/user-service";
+import { apiWrapper } from "@/lib/utils/api-wrapper";
+
+export async function POST(request: NextRequest) {
+  return await apiWrapper(async () => {
+    const data = await request.json();
+    const user = await usersService().create(data);
+    return NextResponse.json(user);
+  });
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

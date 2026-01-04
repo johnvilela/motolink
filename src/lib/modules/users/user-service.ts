@@ -28,6 +28,9 @@ export function usersService() {
           ...validatedData,
           password: hashedPassword,
         },
+        omit: {
+          password: true,
+        },
       });
 
       await db.verificationToken.create({
