@@ -68,6 +68,10 @@ const items = [
         title: "Grupos",
         url: "/gestao/grupos",
       },
+      {
+        title: "Regiões",
+        url: "/gestao/regiao",
+      },
     ],
   },
   {
