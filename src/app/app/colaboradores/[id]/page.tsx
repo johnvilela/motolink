@@ -3,6 +3,8 @@ import { AppContentHeader } from "@/components/ui/app-layout/app-content-header"
 import { Heading } from "@/components/ui/heading";
 import { usersService } from "@/lib/modules/users/user-service";
 import { getUserLogged } from "@/lib/modules/users/users-actions";
+import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
+import { redirect } from "next/navigation";
 
 export default async function EditColaboratorPage({
   params,
@@ -11,6 +13,12 @@ export default async function EditColaboratorPage({
 }) {
   const { id } = await params;
   const user = await getUserLogged();
+  const canEditUser = checkUserPermissions(user, ["employee.edit"]);
+
+  if (!canEditUser) {
+    return redirect("/app/sem-permissao");
+  }
+
   const userToBeEdited = await usersService().getById(id);
 
   if (!userToBeEdited) {

@@ -86,4 +86,48 @@ export const userPermissions = [
       },
     ],
   },
+  {
+    type: "Financeiro",
+    description: "Permissões para gerir Financeiro",
+    rules: [
+      {
+        permission: "financial.view",
+        description: "Visualizar informações financeiras",
+      },
+      {
+        permission: "financial.create",
+        description: "Criar novos registros financeiros",
+      },
+      {
+        permission: "financial.edit",
+        description: "Editar informações financeiras",
+      },
+      {
+        permission: "financial.delete",
+        description: "Excluir registros financeiros",
+      },
+    ],
+  },
+  {
+    type: "Comercial",
+    description: "Permissões para gerir modulo Comercial",
+    rules: [
+      {
+        permission: "commercial.view",
+        description: "Visualizar informações comerciais",
+      },
+      {
+        permission: "commercial.create",
+        description: "Criar novos registros comerciais",
+      },
+      {
+        permission: "commercial.edit",
+        description: "Editar informações comerciais",
+      },
+      {
+        permission: "commercial.delete",
+        description: "Excluir registros comerciais",
+      },
+    ],
+  },
 ];

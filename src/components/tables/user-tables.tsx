@@ -24,6 +24,7 @@ import {
   userStatus,
   userStatusTranslations,
 } from "@/lib/modules/users/users-constants";
+import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +39,11 @@ import {
 
 interface UsersTableProps {
   users: ListUserServiceResponse["data"];
-  loggedUserId?: string;
+  loggedUser?: {
+    id: string;
+    role: string;
+    permissions?: string[] | null;
+  };
 }
 
 const statusColors = {
@@ -47,8 +52,11 @@ const statusColors = {
   PENDING: "bg-yellow-500",
 };
 
-export function UsersTable({ users, loggedUserId }: UsersTableProps) {
+export function UsersTable({ users, loggedUser }: UsersTableProps) {
   const { execute, isExecuting } = useAction(deleteUserAction);
+
+  const can = (permission: string) =>
+    loggedUser ? checkUserPermissions(loggedUser, [permission]) : false;
 
   function copyLinkToClipboard(token: string) {
     const url = `${process.env.NEXT_PUBLIC_APP_URL}/primeiro-login?token=${token}`;
@@ -87,7 +95,7 @@ export function UsersTable({ users, loggedUserId }: UsersTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <TooltipProvider>
-                    {user.status === userStatus.PENDING && (
+                    {user.status === userStatus.PENDING && can("employee.create") && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -107,57 +115,61 @@ export function UsersTable({ users, loggedUserId }: UsersTableProps) {
                         </TooltipContent>
                       </Tooltip>
                     )}
-                    {loggedUserId !== user.id && (
+                    {loggedUser?.id !== user.id && (
                       <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/app/colaboradores/${user.id}`}>
-                                <Pencil />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Editar</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <AlertDialog>
+                        {can("employee.edit") && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <Trash2 />
-                                </Button>
-                              </AlertDialogTrigger>
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/app/colaboradores/${user.id}`}>
+                                  <Pencil />
+                                </Link>
+                              </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Excluir</p>
+                              <p>Editar</p>
                             </TooltipContent>
                           </Tooltip>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Desejar excluir este colaborador?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Essa ação apagará o acesso do colaborador ao
-                                sistema, mas os dados relacionados a ele serão
-                                mantidos para fins históricos.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction asChild>
-                                <Button
-                                  variant="destructive"
-                                  onClick={() => execute({ id: user.id })}
-                                >
-                                  {isExecuting ? "Excluindo..." : "Excluir"}
-                                </Button>
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        )}
+                        {can("employee.delete") && (
+                          <AlertDialog>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Excluir</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Desejar excluir este colaborador?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Essa ação apagará o acesso do colaborador ao
+                                  sistema, mas os dados relacionados a ele serão
+                                  mantidos para fins históricos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction asChild>
+                                  <Button
+                                    variant="destructive"
+                                    onClick={() => execute({ id: user.id })}
+                                  >
+                                    {isExecuting ? "Excluindo..." : "Excluir"}
+                                  </Button>
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </>
                     )}
                   </TooltipProvider>

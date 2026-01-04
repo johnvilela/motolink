@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import type { GetBytokenResponse } from "@/lib/modules/sessions/sessions-service";
+import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
 import {
   Collapsible,
   CollapsibleContent,
@@ -40,6 +41,7 @@ const items = [
     title: "Operacional",
     isActive: false,
     icon: Target,
+    requiredPermission: "manager.view",
     items: [
       {
         title: "Dashboard",
@@ -53,16 +55,13 @@ const items = [
         title: "Monitoramento",
         url: "/operacional/monitoramento",
       },
-      {
-        title: "Gestão",
-        url: "/operacional/gestao",
-      },
     ],
   },
   {
     title: "Financeiro",
     isActive: false,
     icon: Landmark,
+    requiredPermission: "financial.view",
     items: [
       {
         title: "Resumo",
@@ -78,6 +77,7 @@ const items = [
     title: "Comercial",
     isActive: false,
     icon: Handshake,
+    requiredPermission: "commercial.view",
     items: [
       {
         title: "Captações",
@@ -95,6 +95,22 @@ export function AppSidebar({
   user,
   ...props
 }: ComponentProps<typeof Sidebar> & { user?: User }) {
+  const canAccess = (requiredPermission?: string) => {
+    if (!requiredPermission) {
+      return true;
+    }
+
+    if (!user) {
+      return false;
+    }
+
+    return checkUserPermissions(user, [requiredPermission]);
+  };
+
+  const accessibleItems = items.filter((item) =>
+    canAccess(item.requiredPermission),
+  );
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -127,53 +143,61 @@ export function AppSidebar({
               <span>Notificações</span>
             </Link>
           </SidebarMenuButton>
-          <SidebarMenuButton asChild tooltip="Colaboradores">
-            <Link href="/app/colaboradores">
-              <Users />
-              <span>Colaboradores</span>
-            </Link>
-          </SidebarMenuButton>
+          {canAccess("employee.view") ? (
+            <SidebarMenuButton asChild tooltip="Colaboradores">
+              <Link href="/app/colaboradores">
+                <Users />
+                <span>Colaboradores</span>
+              </Link>
+            </SidebarMenuButton>
+          ) : null}
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Modulos</SidebarGroupLabel>
-          <SidebarMenu>
-            {items.map((item) => (
-              <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <div>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </div>
-                  </SidebarMenuButton>
-                  {item.items?.length ? (
-                    <>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuAction className="data-[state=open]:rotate-90">
-                          <ChevronRight />
-                          <span className="sr-only">Toggle</span>
-                        </SidebarMenuAction>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild>
-                                <Link href={`/app${subItem.url}`}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </>
-                  ) : null}
-                </SidebarMenuItem>
-              </Collapsible>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+        {accessibleItems.length ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Modulos</SidebarGroupLabel>
+            <SidebarMenu>
+              {accessibleItems.map((item) => (
+                <Collapsible
+                  key={item.title}
+                  asChild
+                  defaultOpen={item.isActive}
+                >
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <div>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </div>
+                    </SidebarMenuButton>
+                    {item.items?.length ? (
+                      <>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuAction className="data-[state=open]:rotate-90">
+                            <ChevronRight />
+                            <span className="sr-only">Toggle</span>
+                          </SidebarMenuAction>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.items?.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton asChild>
+                                  <Link href={`/app${subItem.url}`}>
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </>
+                    ) : null}
+                  </SidebarMenuItem>
+                </Collapsible>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null}
       </SidebarContent>
       <SidebarFooter>
         <AppFooter user={user} />
