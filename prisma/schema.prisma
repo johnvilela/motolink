@@ -57,32 +57,61 @@ model VerificationToken {
 }
 
 model Client {
-  id            String      @id @default(uuid(7))
-  name          String
-  paymentForm   String[]    @default([])
-  periods       String[]    @default([])
-  cnpj          String
-  cep           String
-  street        String
-  number        String
-  complement    String
-  city          String
-  neighborhood  String
-  uf            String
-  regionId      String?
-  region        Region?     @relation(fields: [regionId], references: [id], onDelete: SetNull)
-  groupId       String?
-  group         Group?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  contactName   String
-  branch        String      @default("")
-  createdBy     String?
-  createdByUser User?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  isDeleted     Boolean     @default(false)
-  updatedAt     DateTime    @updatedAt
-  createdAt     DateTime    @default(now())
-  workShifts    WorkShift[]
+  id                  String               @id @default(uuid(7))
+  name                String
+  cnpj                String
+  cep                 String
+  street              String
+  number              String
+  complement          String
+  city                String
+  neighborhood        String
+  uf                  String
+  regionId            String?
+  region              Region?              @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  groupId             String?
+  group               Group?               @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  contactName         String
+  branch              String               @default("")
+  createdBy           String?
+  createdByUser       User?                @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  isDeleted           Boolean              @default(false)
+  updatedAt           DateTime             @updatedAt
+  createdAt           DateTime             @default(now())
+  workShifts          WorkShift[]
+  commercialCondition CommercialCondition?
 
   @@map("clients")
+}
+
+model CommercialCondition {
+  id                     String   @id @default(uuid(7))
+  clientId               String   @unique
+  client                 Client   @relation(fields: [clientId], references: [id])
+  paymentForm            String[] @default([])
+  paymentTermDays        Int?     @default(0)
+  deliveryAreaKm         Float?   @default(0)
+  isMotolinkCovered      Boolean? @default(false)
+  guaranteedDay          Int?     @default(0)
+  guaranteedDayWeekend   Int?     @default(0)
+  guaranteedNight        Int?     @default(0)
+  guaranteedNightWeekend Int?     @default(0)
+  clientDailyDay         Decimal? @default(0) @db.Decimal(16, 2)
+  clientDailyDayWknd     Decimal? @default(0) @db.Decimal(16, 2)
+  clientDailyNight       Decimal? @default(0) @db.Decimal(16, 2)
+  clientDailyNightWknd   Decimal? @default(0) @db.Decimal(16, 2)
+  clientPerDelivery      Decimal? @default(0) @db.Decimal(16, 2)
+  clientAdditionalKm     Decimal? @default(0) @db.Decimal(16, 2)
+  courierDailyDay        Decimal? @default(0) @db.Decimal(16, 2)
+  courierDailyDayWknd    Decimal? @default(0) @db.Decimal(16, 2)
+  courierDailyNight      Decimal? @default(0) @db.Decimal(16, 2)
+  courierDailyNightWknd  Decimal? @default(0) @db.Decimal(16, 2)
+  courierPerDelivery     Decimal? @default(0) @db.Decimal(16, 2)
+  courierAdditionalKm    Decimal? @default(0) @db.Decimal(16, 2)
+  updatedAt              DateTime @updatedAt
+  createdAt              DateTime @default(now())
+
+  @@map("commercial_conditions")
 }
 
 model Deliveryman {

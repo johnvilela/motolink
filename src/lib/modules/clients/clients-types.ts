@@ -1,5 +1,27 @@
 import z from "zod";
 
+export const CommercialConditionSchema = z.object({
+  paymentForm: z.array(z.string()).optional(),
+  deliveryAreaKm: z.number().optional(),
+  isMotolinkCovered: z.boolean().optional(),
+  guaranteedDay: z.number().int().optional(),
+  guaranteedDayWeekend: z.number().int().optional(),
+  guaranteedNight: z.number().int().optional(),
+  guaranteedNightWeekend: z.number().int().optional(),
+  clientDailyDay: z.number().optional(),
+  clientDailyDayWknd: z.number().optional(),
+  clientDailyNight: z.number().optional(),
+  clientDailyNightWknd: z.number().optional(),
+  clientPerDelivery: z.number().optional(),
+  clientAdditionalKm: z.number().optional(),
+  courierDailyDay: z.number().optional(),
+  courierDailyDayWknd: z.number().optional(),
+  courierDailyNight: z.number().optional(),
+  courierDailyNightWknd: z.number().optional(),
+  courierPerDelivery: z.number().optional(),
+  courierAdditionalKm: z.number().optional(),
+});
+
 export const MutateClientSchema = z.object({
   id: z.string().optional(),
   name: z
@@ -7,8 +29,6 @@ export const MutateClientSchema = z.object({
     .trim()
     .min(3, { message: "Nome deve conter no mínimo 3 caracteres" })
     .max(255, { message: "Nome deve conter no máximo 255 caracteres" }),
-  paymentForm: z.array(z.string().trim().min(1)).optional(),
-  periods: z.array(z.string().trim().min(1)).optional(),
   cnpj: z
     .string("CNPJ é obrigatório")
     .trim()
@@ -57,6 +77,7 @@ export const MutateClientSchema = z.object({
     .max(255, { message: "Contato deve conter no máximo 255 caracteres" }),
   branch: z.string().default(""),
   createdBy: z.string().optional(),
+  commercialCondition: CommercialConditionSchema.optional(),
 });
 
 export const ListClientsSchema = z.object({
@@ -69,3 +90,4 @@ export const ListClientsSchema = z.object({
 
 export type MutateClientDTO = z.infer<typeof MutateClientSchema>;
 export type ListClientsDTO = z.infer<typeof ListClientsSchema>;
+export type CommercialConditionDTO = z.infer<typeof CommercialConditionSchema>;

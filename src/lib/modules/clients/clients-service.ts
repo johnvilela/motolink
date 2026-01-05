@@ -20,13 +20,24 @@ export function clientsService() {
         throw new AppError("Campos inválidos", 400);
       }
 
+      const { commercialCondition, ...clientData } = validatedData;
+
       const client = await db.client.create({
         data: {
-          ...validatedData,
-          regionId: validatedData.regionId || null,
-          groupId: validatedData.groupId || null,
+          ...clientData,
+          regionId: clientData.regionId || null,
+          groupId: clientData.groupId || null,
         },
       });
+
+      if (commercialCondition) {
+        await db.commercialCondition.create({
+          data: {
+            ...commercialCondition,
+            clientId: client.id,
+          },
+        });
+      }
 
       return client;
     },
@@ -47,18 +58,40 @@ export function clientsService() {
         throw new AppError("Campos inválidos", 400);
       }
 
+      const { commercialCondition, ...clientData } = validatedData;
+
       const updatedClient = await db.client.update({
         where: { id },
         data: {
-          ...validatedData,
-          ...(validatedData.regionId !== undefined
-            ? { regionId: validatedData.regionId || null }
+          ...clientData,
+          ...(clientData.regionId !== undefined
+            ? { regionId: clientData.regionId || null }
             : {}),
-          ...(validatedData.groupId !== undefined
-            ? { groupId: validatedData.groupId || null }
+          ...(clientData.groupId !== undefined
+            ? { groupId: clientData.groupId || null }
             : {}),
         },
       });
+
+      if (commercialCondition) {
+        const existingCondition = await db.commercialCondition.findUnique({
+          where: { clientId: id },
+        });
+
+        if (existingCondition) {
+          await db.commercialCondition.update({
+            where: { clientId: id },
+            data: commercialCondition,
+          });
+        } else {
+          await db.commercialCondition.create({
+            data: {
+              ...commercialCondition,
+              clientId: id,
+            },
+          });
+        }
+      }
 
       return updatedClient;
     },
