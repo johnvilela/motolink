@@ -7,7 +7,7 @@ import { actionClient } from "@/lib/services/safe-action";
 import { clientsService } from "./clients-service";
 import { MutateClientSchema } from "./clients-types";
 
-const CLIENTS_REDIRECT_PATH = "/app/comercial/clientes";
+const CLIENTS_REDIRECT_PATH = "/app/clientes";
 
 export const mutateClientAction = actionClient
   .inputSchema(MutateClientSchema.omit({ branch: true, createdBy: true }))
