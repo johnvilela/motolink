@@ -5,12 +5,12 @@ import {
   Handshake,
   Landmark,
   LayoutDashboard,
-  MapPin,
   Target,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { getCurrentBranch } from "@/lib/modules/branch/branch-actions";
 import type { GetBytokenResponse } from "@/lib/modules/sessions/sessions-service";
 import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
 import {
@@ -24,7 +24,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -34,6 +33,7 @@ import {
   SidebarMenuSubItem,
 } from "../sidebar";
 import { AppFooter } from "./app-footer";
+import { AppSidebarHeader } from "./sidebar-header";
 
 type User = GetBytokenResponse["user"] | null | undefined;
 
@@ -108,10 +108,12 @@ const items = [
   },
 ];
 
-export function AppSidebar({
+export async function AppSidebar({
   user,
   ...props
 }: ComponentProps<typeof Sidebar> & { user?: User }) {
+  const currentBranch = await getCurrentBranch();
+
   const canAccess = (requiredPermission?: string) => {
     if (!requiredPermission) {
       return true;
@@ -130,22 +132,7 @@ export function AppSidebar({
 
   return (
     <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <div>
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <MapPin className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Motolink</span>
-                </div>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+      <AppSidebarHeader currentBranch={currentBranch} user={user} />
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenuButton asChild tooltip="Dashboard">

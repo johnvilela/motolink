@@ -4,9 +4,9 @@ import { AppError } from "@/lib/utils/app-error";
 import type { Prisma } from "../../../../generated/prisma/client";
 import {
   type ListGroupsDTO,
-  MutateGroupSchema,
-  type MutateGroupDTO,
   ListGroupsSchema,
+  type MutateGroupDTO,
+  MutateGroupSchema,
 } from "./groups-types";
 
 export function groupsService() {
@@ -88,24 +88,25 @@ export function groupsService() {
     },
 
     async listAll(input: ListGroupsDTO = {}) {
-      const { data: validatedInput, error } = ListGroupsSchema.safeParse(
-        input,
-      );
+      const { data: validatedInput, error } = ListGroupsSchema.safeParse(input);
 
       if (error) {
         throw new AppError("Parâmetros inválidos", 400);
       }
 
-      const { page = 1, limit = PAGE_SIZE, name } = validatedInput;
+      const { page = 1, limit = PAGE_SIZE, name, branch } = validatedInput;
 
-      const where: Prisma.GroupWhereInput = name
-        ? {
-            name: {
-              contains: name,
-              mode: "insensitive",
-            },
-          }
-        : {};
+      const where: Prisma.GroupWhereInput = {
+        ...(name
+          ? {
+              name: {
+                contains: name,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+        ...(branch ? { branch } : {}),
+      };
 
       const [groups, count] = await db.$transaction([
         db.group.findMany({

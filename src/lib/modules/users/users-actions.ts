@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { cookieNames } from "@/lib/constants/cookie-names";
 import { actionClient } from "@/lib/services/safe-action";
 import { AppError } from "@/lib/utils/app-error";
-import { redirectByRole } from "@/lib/utils/redirect-by-role";
 import { usersService } from "./user-service";
 import { changePasswordSchema, MutateUserSchema } from "./user-types";
 
@@ -28,9 +27,9 @@ export const changePasswordAction = actionClient
       throw new AppError("Acesso não autorizado.", 401);
     }
 
-    const updatedUser = await usersService().changePassword(token, password);
+    await usersService().changePassword(token, password);
 
-    return redirect(redirectByRole(updatedUser.role));
+    return redirect("/app/dashboard");
   });
 
 export const mutateUserAction = actionClient

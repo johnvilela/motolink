@@ -101,16 +101,19 @@ export function regionsService() {
         throw new AppError("Parâmetros inválidos", 400);
       }
 
-      const { page = 1, limit = PAGE_SIZE, name } = validatedInput;
+      const { page = 1, limit = PAGE_SIZE, name, branch } = validatedInput;
 
-      const where: Prisma.RegionWhereInput = name
-        ? {
-            name: {
-              contains: name,
-              mode: "insensitive",
-            },
-          }
-        : {};
+      const where: Prisma.RegionWhereInput = {
+        ...(name
+          ? {
+              name: {
+                contains: name,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+        ...(branch ? { branch } : {}),
+      };
 
       const [regions, count] = await db.$transaction([
         db.region.findMany({

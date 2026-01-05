@@ -21,6 +21,7 @@ export const ListGroupsSchema = z.object({
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().optional(),
   name: z.string().trim().min(1).optional(),
+  branch: z.string().optional(),
 });
 
 export type MutateGroupDTO = z.infer<typeof MutateGroupSchema>;

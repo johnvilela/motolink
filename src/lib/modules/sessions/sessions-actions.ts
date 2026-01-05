@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cookieNames } from "@/lib/constants/cookie-names";
 import { actionClient } from "@/lib/services/safe-action";
-import { redirectByRole } from "@/lib/utils/redirect-by-role";
 import { sessionsService } from "./sessions-service";
 import { createSessionSchema } from "./sessions-types";
 
@@ -39,7 +38,7 @@ export const createSessionAction = actionClient
       secure: process.env.NODE_ENV === "production",
     });
 
-    redirect(redirectByRole(session.user.role));
+    redirect("/app/dashboard");
   });
 
 export const deleteSessionAction = actionClient.action(async () => {

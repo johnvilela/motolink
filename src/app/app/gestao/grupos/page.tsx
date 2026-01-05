@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GroupsTable } from "@/components/tables/group-table";
@@ -6,6 +7,7 @@ import { TablePagination } from "@/components/tables/table-pagination";
 import { AppContentHeader } from "@/components/ui/app-layout/app-content-header";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
+import { cookieNames } from "@/lib/constants/cookie-names";
 import { groupsService } from "@/lib/modules/groups/groups-service";
 import { getUserLogged } from "@/lib/modules/users/users-actions";
 import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
@@ -23,12 +25,16 @@ export default async function GroupsManagementPage({
     return redirect("/app/sem-permissao");
   }
 
+  const cookieStore = await cookies();
+  const currentBranch = cookieStore.get(cookieNames.CURRENT_BRANCH)?.value;
+
   const currentPage = Number(page) || 1;
   const normalizedSearch = typeof search === "string" ? search.trim() : "";
   const groups = await groupsService().listAll({
     name: normalizedSearch || undefined,
     limit: 10,
     page: currentPage,
+    branch: currentBranch,
   });
   const canCreateGroup = checkUserPermissions(loggedUser, ["manager.create"]);
 

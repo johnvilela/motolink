@@ -13,7 +13,7 @@ export function sessionsService() {
         where: { email },
       });
 
-      if (!user) {
+      if (!user || !user.password) {
         throw new AppError("Credenciais inválidas", 401);
       }
 
@@ -61,6 +61,7 @@ export function sessionsService() {
               email: true,
               role: true,
               permissions: true,
+              branchs: true,
             },
           },
         },

@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cookieNames } from "@/lib/constants/cookie-names";
 import { sessionsService } from "@/lib/modules/sessions/sessions-service";
-import { AppContentHeader } from "./app-content-header";
 import { AppSidebar } from "./app-sidebar";
 
 interface AppLayoutWrapperProps {
