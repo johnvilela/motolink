@@ -121,13 +121,13 @@ model Deliveryman {
   phone        String
   contractType String
   mainPixKey   String
-  secondPixKey String
-  thridPixKey  String
-  agency       String
-  account      String
-  vehicleModel String
-  vehiclePlate String
-  vehicleColor String
+  secondPixKey String?
+  thridPixKey  String?
+  agency       String?
+  account      String?
+  vehicleModel String?
+  vehiclePlate String?
+  vehicleColor String?
   branch       String      @default("")
   regionId     String?
   region       Region?     @relation(fields: [regionId], references: [id], onDelete: SetNull)
