@@ -27,7 +27,7 @@ export default async function NewRegionPage() {
       />
       <main className="container mx-auto py-10">
         <Heading variant="h2">Cadastrar Região</Heading>
-        <RegionForm user={user} />
+        <RegionForm />
       </main>
     </>
   );

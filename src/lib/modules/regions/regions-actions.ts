@@ -10,18 +10,23 @@ import { MutateRegionSchema } from "./regions-types";
 const REGIONS_REDIRECT_PATH = "/app/gestao/regiao";
 
 export const mutateRegionAction = actionClient
-  .inputSchema(MutateRegionSchema.omit({ branch: true }))
+  .inputSchema(MutateRegionSchema.omit({ branch: true, createdBy: true }))
   .action(async ({ clientInput }) => {
     const cookieStore = await cookies();
     const currentBranch =
       cookieStore.get(cookieNames.CURRENT_BRANCH)?.value || "";
+    const currentUserId = cookieStore.get(cookieNames.USER_ID)?.value || "";
 
-    const dataWithBranch = { ...clientInput, branch: currentBranch };
+    const fullData = {
+      ...clientInput,
+      branch: currentBranch,
+      createdBy: clientInput.id ? undefined : currentUserId,
+    };
 
     if (clientInput.id) {
-      await regionsService().edit(clientInput.id, dataWithBranch);
+      await regionsService().edit(clientInput.id, fullData);
     } else {
-      await regionsService().create(dataWithBranch);
+      await regionsService().create(fullData);
     }
 
     return redirect(REGIONS_REDIRECT_PATH);

@@ -4,49 +4,43 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
 import { mutateRegionAction } from "@/lib/modules/regions/regions-actions";
-import { MutateRegionSchema } from "@/lib/modules/regions/regions-types";
+import {
+  type MutateRegionDTO,
+  MutateRegionSchema,
+} from "@/lib/modules/regions/regions-types";
 import type { Region } from "../../../generated/prisma/client";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Textfield } from "../ui/textfield";
 
-type RegionFormDTO = z.infer<typeof MutateRegionSchema>;
-
 interface RegionFormProps {
-  user: { id: string };
   regionToBeEdited?: Region | null;
 }
 
-export function RegionForm({ user, regionToBeEdited }: RegionFormProps) {
+export function RegionForm({ regionToBeEdited }: RegionFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegionFormDTO>({
-    resolver: zodResolver(MutateRegionSchema),
+  } = useForm<Omit<MutateRegionDTO, "createdBy" | "branch">>({
+    resolver: zodResolver(
+      MutateRegionSchema.omit({ createdBy: true, branch: true }),
+    ),
     defaultValues: {
       id: regionToBeEdited?.id,
       name: regionToBeEdited?.name ?? "",
       description: regionToBeEdited?.description ?? "",
-      createdBy: regionToBeEdited?.createdBy ?? user.id,
     },
   });
 
   const { execute, isExecuting, result } = useAction(mutateRegionAction);
 
-  const onSubmit = (data: RegionFormDTO) =>
-    execute({
-      ...data,
-      description: data.description.trim(),
-    });
-
   return (
     <form
       className="flex flex-col gap-4 my-2 p-4"
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(execute)}
       autoComplete="off"
     >
       {result.serverError && (
@@ -57,7 +51,6 @@ export function RegionForm({ user, regionToBeEdited }: RegionFormProps) {
         </Alert>
       )}
       <input type="hidden" {...register("id")} />
-      <input type="hidden" {...register("createdBy")} />
 
       <Textfield
         type="text"

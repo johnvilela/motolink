@@ -39,7 +39,7 @@ export default async function EditGroupPage({
       />
       <main className="container mx-auto py-10">
         <Heading variant="h2">Editar Grupo</Heading>
-        <GroupForm user={user} groupToBeEdited={groupToBeEdited} />
+        <GroupForm groupToBeEdited={groupToBeEdited} />
       </main>
     </>
   );

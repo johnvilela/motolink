@@ -10,18 +10,23 @@ import { MutateGroupSchema } from "./groups-types";
 const GROUPS_REDIRECT_PATH = "/app/gestao/grupos";
 
 export const mutateGroupAction = actionClient
-  .inputSchema(MutateGroupSchema.omit({ branch: true }))
+  .inputSchema(MutateGroupSchema.omit({ branch: true, createdBy: true }))
   .action(async ({ clientInput }) => {
     const cookieStore = await cookies();
     const currentBranch =
       cookieStore.get(cookieNames.CURRENT_BRANCH)?.value || "";
+    const currentUserId = cookieStore.get(cookieNames.USER_ID)?.value || "";
 
-    const dataWithBranch = { ...clientInput, branch: currentBranch };
+    const fullData = {
+      ...clientInput,
+      branch: currentBranch,
+      createdBy: clientInput.id ? undefined : currentUserId,
+    };
 
     if (clientInput.id) {
-      await groupsService().edit(clientInput.id, dataWithBranch);
+      await groupsService().edit(clientInput.id, fullData);
     } else {
-      await groupsService().create(dataWithBranch);
+      await groupsService().create(fullData);
     }
 
     return redirect(GROUPS_REDIRECT_PATH);

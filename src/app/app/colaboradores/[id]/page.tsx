@@ -1,10 +1,10 @@
+import { redirect } from "next/navigation";
 import { UserForm } from "@/components/forms/user-form";
 import { AppContentHeader } from "@/components/ui/app-layout/app-content-header";
 import { Heading } from "@/components/ui/heading";
 import { usersService } from "@/lib/modules/users/user-service";
 import { getUserLogged } from "@/lib/modules/users/users-actions";
 import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
-import { redirect } from "next/navigation";
 
 export default async function EditColaboratorPage({
   params,

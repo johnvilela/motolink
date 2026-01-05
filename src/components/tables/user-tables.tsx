@@ -95,26 +95,27 @@ export function UsersTable({ users, loggedUser }: UsersTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <TooltipProvider>
-                    {user.status === userStatus.PENDING && can("employee.create") && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              copyLinkToClipboard(
-                                user.verificationTokens[0].token,
-                              )
-                            }
-                          >
-                            <LinkIcon />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copiar link de acesso</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
+                    {user.status === userStatus.PENDING &&
+                      can("employee.create") && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                copyLinkToClipboard(
+                                  user.verificationTokens[0].token,
+                                )
+                              }
+                            >
+                              <LinkIcon />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Copiar link de acesso</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     {loggedUser?.id !== user.id && (
                       <>
                         {can("employee.edit") && (

@@ -4,49 +4,43 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
 import { mutateGroupAction } from "@/lib/modules/groups/groups-actions";
-import { MutateGroupSchema } from "@/lib/modules/groups/groups-types";
+import {
+  type MutateGroupDTO,
+  MutateGroupSchema,
+} from "@/lib/modules/groups/groups-types";
 import type { Group } from "../../../generated/prisma/client";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Textfield } from "../ui/textfield";
 
-type GroupFormDTO = z.infer<typeof MutateGroupSchema>;
-
 interface GroupFormProps {
-  user: { id: string };
   groupToBeEdited?: Group | null;
 }
 
-export function GroupForm({ user, groupToBeEdited }: GroupFormProps) {
+export function GroupForm({ groupToBeEdited }: GroupFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<GroupFormDTO>({
-    resolver: zodResolver(MutateGroupSchema),
+  } = useForm<Omit<MutateGroupDTO, "createdBy" | "branch">>({
+    resolver: zodResolver(
+      MutateGroupSchema.omit({ createdBy: true, branch: true }),
+    ),
     defaultValues: {
       id: groupToBeEdited?.id,
       name: groupToBeEdited?.name ?? "",
       description: groupToBeEdited?.description ?? undefined,
-      createdBy: groupToBeEdited?.createdBy ?? user.id,
     },
   });
 
   const { execute, isExecuting, result } = useAction(mutateGroupAction);
 
-  const onSubmit = (data: GroupFormDTO) =>
-    execute({
-      ...data,
-      description: data.description?.trim() || undefined,
-    });
-
   return (
     <form
       className="flex flex-col gap-4 my-2 p-4"
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(execute)}
       autoComplete="off"
     >
       {result.serverError && (
@@ -57,7 +51,6 @@ export function GroupForm({ user, groupToBeEdited }: GroupFormProps) {
         </Alert>
       )}
       <input type="hidden" {...register("id")} />
-      <input type="hidden" {...register("createdBy")} />
 
       <Textfield
         type="text"

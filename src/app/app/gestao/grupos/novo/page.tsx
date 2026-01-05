@@ -27,7 +27,7 @@ export default async function NewGroupPage() {
       />
       <main className="container mx-auto py-10">
         <Heading variant="h2">Cadastrar Grupo</Heading>
-        <GroupForm user={user} />
+        <GroupForm />
       </main>
     </>
   );

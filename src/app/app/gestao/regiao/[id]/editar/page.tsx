@@ -39,7 +39,7 @@ export default async function EditRegionPage({
       />
       <main className="container mx-auto py-10">
         <Heading variant="h2">Editar Região</Heading>
-        <RegionForm user={user} regionToBeEdited={regionToBeEdited} />
+        <RegionForm regionToBeEdited={regionToBeEdited} />
       </main>
     </>
   );
