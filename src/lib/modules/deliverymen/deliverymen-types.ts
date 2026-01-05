@@ -1,4 +1,5 @@
 import z from "zod";
+import { cleanMask } from "@/lib/masks/cleanMask";
 import { contractTypeArr } from "./deliverymen-constants";
 
 export const MutateDeliverymanSchema = z.object({
@@ -12,53 +13,65 @@ export const MutateDeliverymanSchema = z.object({
     .string("Documento é obrigatório")
     .trim()
     .min(1, { message: "Documento é obrigatório" })
-    .max(50, { message: "Documento deve conter no máximo 50 caracteres" }),
+    .max(50, { message: "Documento deve conter no máximo 50 caracteres" })
+    .transform(cleanMask),
   phone: z
     .string("Telefone é obrigatório")
     .trim()
     .min(1, { message: "Telefone é obrigatório" })
-    .max(20, { message: "Telefone deve conter no máximo 20 caracteres" }),
+    .max(20, { message: "Telefone deve conter no máximo 20 caracteres" })
+    .transform(cleanMask),
   contractType: z.enum(contractTypeArr),
   mainPixKey: z
     .string("Chave PIX principal é obrigatória")
     .trim()
     .min(1, { message: "Chave PIX principal é obrigatória" })
-    .max(255, { message: "Chave PIX principal deve conter no máximo 255 caracteres" }),
+    .max(255, {
+      message: "Chave PIX principal deve conter no máximo 255 caracteres",
+    }),
   secondPixKey: z
-    .string("Chave PIX secundária é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Chave PIX secundária é obrigatória" })
-    .max(255, { message: "Chave PIX secundária deve conter no máximo 255 caracteres" }),
+    .max(255, {
+      message: "Chave PIX secundária deve conter no máximo 255 caracteres",
+    })
+    .optional(),
   thridPixKey: z
-    .string("Chave PIX terciária é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Chave PIX terciária é obrigatória" })
-    .max(255, { message: "Chave PIX terciária deve conter no máximo 255 caracteres" }),
+    .max(255, {
+      message: "Chave PIX terciária deve conter no máximo 255 caracteres",
+    })
+    .optional(),
   agency: z
-    .string("Agência é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Agência é obrigatória" })
-    .max(50, { message: "Agência deve conter no máximo 50 caracteres" }),
+    .max(50, { message: "Agência deve conter no máximo 50 caracteres" })
+    .optional(),
   account: z
-    .string("Conta é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Conta é obrigatória" })
-    .max(50, { message: "Conta deve conter no máximo 50 caracteres" }),
+    .max(50, { message: "Conta deve conter no máximo 50 caracteres" })
+    .optional(),
   vehicleModel: z
-    .string("Modelo do veículo é obrigatório")
+    .string()
     .trim()
-    .min(1, { message: "Modelo do veículo é obrigatório" })
-    .max(255, { message: "Modelo do veículo deve conter no máximo 255 caracteres" }),
+    .max(255, {
+      message: "Modelo do veículo deve conter no máximo 255 caracteres",
+    })
+    .optional(),
   vehiclePlate: z
-    .string("Placa do veículo é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Placa do veículo é obrigatória" })
-    .max(20, { message: "Placa do veículo deve conter no máximo 20 caracteres" }),
+    .max(20, {
+      message: "Placa do veículo deve conter no máximo 20 caracteres",
+    })
+    .optional(),
   vehicleColor: z
-    .string("Cor do veículo é obrigatória")
+    .string()
     .trim()
-    .min(1, { message: "Cor do veículo é obrigatória" })
-    .max(50, { message: "Cor do veículo deve conter no máximo 50 caracteres" }),
+    .max(50, { message: "Cor do veículo deve conter no máximo 50 caracteres" })
+    .optional(),
   regionId: z.string().optional().nullable(),
   branch: z.string().default(""),
 });

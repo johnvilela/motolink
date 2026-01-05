@@ -7,7 +7,7 @@ import { actionClient } from "@/lib/services/safe-action";
 import { deliverymenService } from "./deliverymen-service";
 import { MutateDeliverymanSchema } from "./deliverymen-types";
 
-const DELIVERYMEN_REDIRECT_PATH = "/app/gestao/motoboys";
+const DELIVERYMEN_REDIRECT_PATH = "/app/entregadores";
 
 export const mutateDeliverymanAction = actionClient
   .inputSchema(MutateDeliverymanSchema.omit({ branch: true }))

@@ -5,6 +5,7 @@ import {
   Handshake,
   Landmark,
   LayoutDashboard,
+  Motorbike,
   Target,
   Users,
 } from "lucide-react";
@@ -152,6 +153,14 @@ export async function AppSidebar({
               <Link href="/app/colaboradores">
                 <Users />
                 <span>Colaboradores</span>
+              </Link>
+            </SidebarMenuButton>
+          ) : null}
+          {canAccess("branch.view") ? (
+            <SidebarMenuButton asChild tooltip="Entregadores">
+              <Link href="/app/entregadores">
+                <Motorbike />
+                <span>Entregadores</span>
               </Link>
             </SidebarMenuButton>
           ) : null}
