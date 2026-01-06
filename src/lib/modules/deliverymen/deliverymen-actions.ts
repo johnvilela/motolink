@@ -38,10 +38,10 @@ export const deleteDeliverymanAction = actionClient
     return redirect(DELIVERYMEN_REDIRECT_PATH);
   });
 
-export const blockDeliverymanAction = actionClient
+export const toggleBlockDeliverymanAction = actionClient
   .inputSchema(MutateDeliverymanSchema.pick({ id: true }))
   .action(async ({ clientInput: { id } }) => {
-    await deliverymenService().block(id!);
+    await deliverymenService().toggleBlock(id!);
 
     return redirect(DELIVERYMEN_REDIRECT_PATH);
   });

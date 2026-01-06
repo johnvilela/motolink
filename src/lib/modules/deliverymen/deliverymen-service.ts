@@ -76,7 +76,7 @@ export function deliverymenService() {
       return deletedDeliveryman;
     },
 
-    async block(id: string) {
+    async toggleBlock(id: string) {
       const existingDeliveryman = await db.deliveryman.findUnique({
         where: { id },
       });
@@ -85,12 +85,12 @@ export function deliverymenService() {
         throw new AppError("Motoboy não encontrado.", 404);
       }
 
-      const blockedDeliveryman = await db.deliveryman.update({
+      const updatedDeliveryman = await db.deliveryman.update({
         where: { id },
-        data: { isBlocked: true },
+        data: { isBlocked: !existingDeliveryman.isBlocked },
       });
 
-      return blockedDeliveryman;
+      return updatedDeliveryman;
     },
 
     async getById(id: string) {

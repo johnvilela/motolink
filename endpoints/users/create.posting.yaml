@@ -11,7 +11,7 @@ body:
     }
   content_type: application/json
 headers:
-- name: Authorization
-  value: 210990Ea!
+- name: authorization
+  value: secret
 - name: content-type
   value: application/json

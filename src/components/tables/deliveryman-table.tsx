@@ -1,6 +1,6 @@
 "use client";
 
-import { Ban, Eye, Pencil, Trash2 } from "lucide-react";
+import { Ban, CircleCheck, Eye, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useAction } from "next-safe-action/hooks";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cpfMask } from "@/lib/masks/cpf-mask";
+import { phoneMask } from "@/lib/masks/phone-mask";
 import {
-  blockDeliverymanAction,
   deleteDeliverymanAction,
+  toggleBlockDeliverymanAction,
 } from "@/lib/modules/deliverymen/deliverymen-actions";
 import { CONTRACT_TYPE } from "@/lib/modules/deliverymen/deliverymen-constants";
 import type { ListDeliverymenServiceResponse } from "@/lib/modules/deliverymen/deliverymen-service";
-import { cpfMask } from "@/lib/masks/cpf-mask";
-import { phoneMask } from "@/lib/masks/phone-mask";
 import { checkUserPermissions } from "@/lib/utils/check-user-permissions";
 import {
   AlertDialog,
@@ -73,9 +73,8 @@ export function DeliverymenTable({
   const { execute: executeDelete, isExecuting: isDeleting } = useAction(
     deleteDeliverymanAction,
   );
-  const { execute: executeBlock, isExecuting: isBlocking } = useAction(
-    blockDeliverymanAction,
-  );
+  const { execute: executeToggleBlock, isExecuting: isTogglingBlock } =
+    useAction(toggleBlockDeliverymanAction);
 
   const can = (permission: string) =>
     loggedUser ? checkUserPermissions(loggedUser, [permission]) : false;
@@ -157,28 +156,39 @@ export function DeliverymenTable({
                           </TooltipContent>
                         </Tooltip>
                       )}
-                      {can("manager.delete") && !deliveryman.isBlocked && (
+                      {can("manager.delete") && (
                         <AlertDialog>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm">
-                                  <Ban />
+                                  {deliveryman.isBlocked ? (
+                                    <CircleCheck />
+                                  ) : (
+                                    <Ban />
+                                  )}
                                 </Button>
                               </AlertDialogTrigger>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Bloquear</p>
+                              <p>
+                                {deliveryman.isBlocked
+                                  ? "Desbloquear"
+                                  : "Bloquear"}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>
-                                Deseja bloquear este entregador?
+                                {deliveryman.isBlocked
+                                  ? "Deseja desbloquear este entregador?"
+                                  : "Deseja bloquear este entregador?"}
                               </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Essa ação impedirá o entregador de continuar
-                                ativo no sistema.
+                                {deliveryman.isBlocked
+                                  ? "O entregador poderá voltar a ficar ativo no sistema."
+                                  : "Essa ação impedirá o entregador de continuar ativo no sistema."}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -187,10 +197,16 @@ export function DeliverymenTable({
                                 <Button
                                   variant="destructive"
                                   onClick={() =>
-                                    executeBlock({ id: deliveryman.id })
+                                    executeToggleBlock({ id: deliveryman.id })
                                   }
                                 >
-                                  {isBlocking ? "Bloqueando..." : "Bloquear"}
+                                  {isTogglingBlock
+                                    ? deliveryman.isBlocked
+                                      ? "Desbloqueando..."
+                                      : "Bloqueando..."
+                                    : deliveryman.isBlocked
+                                      ? "Desbloquear"
+                                      : "Bloquear"}
                                 </Button>
                               </AlertDialogAction>
                             </AlertDialogFooter>

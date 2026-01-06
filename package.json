@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "biome check --write",
     "format": "biome format --write",
-    "posting:dev": "posting --collection endpoints/ --env endpoints/.env.dev",
-    "posting:prod": "posting --collection endpoints/ --env endpoints/.env.prod"
+    "docs:dev": "posting --collection endpoints/ --env endpoints/.env.dev",
+    "docs:prod": "posting --collection endpoints/ --env endpoints/.env.prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
