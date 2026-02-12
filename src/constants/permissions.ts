@@ -18,6 +18,10 @@ export const permissionsConst = [
       "regions.create",
       "regions.edit",
       "regions.delete",
+      "deliverymen.view",
+      "deliverymen.create",
+      "deliverymen.edit",
+      "deliverymen.delete",
     ],
   },
   {
@@ -35,6 +39,10 @@ export const permissionsConst = [
       "regions.create",
       "regions.edit",
       "regions.delete",
+      "deliverymen.view",
+      "deliverymen.create",
+      "deliverymen.edit",
+      "deliverymen.delete",
     ],
   },
 ];
@@ -44,6 +52,7 @@ export const PERMISSION_MODULES = [
   { key: "branches", label: "Filiais" },
   { key: "groups", label: "Grupos" },
   { key: "regions", label: "Regioes" },
+  { key: "deliverymen", label: "Entregadores" },
 ] as const;
 
 export const PERMISSION_ACTIONS = [
