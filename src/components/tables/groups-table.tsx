@@ -41,7 +41,18 @@ interface GroupsTableProps {
   groups: Group[];
 }
 
-export function GroupsTable({ groups }: GroupsTableProps) {
+interface GroupsTablePermissionFlags {
+  canView?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+export function GroupsTable({
+  groups,
+  canView = true,
+  canEdit = true,
+  canDelete = true,
+}: GroupsTableProps & GroupsTablePermissionFlags) {
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -88,40 +99,46 @@ export function GroupsTable({ groups }: GroupsTableProps) {
               <TableCell className="truncate">{group.name}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/gestao/grupos/${group.id}`}>
-                          <EyeIcon />
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Ver detalhes</TooltipContent>
-                  </Tooltip>
+                  {canView && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link href={`/gestao/grupos/${group.id}`}>
+                            <EyeIcon />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Ver detalhes</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/gestao/grupos/${group.id}/editar`}>
-                          <PencilIcon />
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Editar</TooltipContent>
-                  </Tooltip>
+                  {canEdit && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link href={`/gestao/grupos/${group.id}/editar`}>
+                            <PencilIcon />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Editar</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setDeleteTarget(group)}
-                      >
-                        <Trash2Icon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Excluir</TooltipContent>
-                  </Tooltip>
+                  {canDelete && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setDeleteTarget(group)}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Excluir</TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

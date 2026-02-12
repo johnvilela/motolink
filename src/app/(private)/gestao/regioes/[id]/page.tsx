@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Text } from "@/components/ui/text";
 import { regionsService } from "@/modules/regions/regions-service";
+import { getCurrentUser } from "@/modules/users/users-queries";
+import { hasPermissions } from "@/utils/has-permissions";
+import requirePermissions from "@/utils/require-permissions";
 
 interface DetalheRegiaoPageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +18,9 @@ export default async function DetalheRegiaoPage({
   params,
 }: DetalheRegiaoPageProps) {
   const { id } = await params;
+
+  const currentUser = await getCurrentUser();
+  requirePermissions(currentUser, ["regions.view"], "Regiões");
 
   const region = await regionsService().getById(id);
 
@@ -34,12 +40,14 @@ export default async function DetalheRegiaoPage({
 
       <div className="flex items-center justify-between">
         <Heading variant="h3">{region.name}</Heading>
-        <Button variant="outline" asChild>
-          <Link href={`/gestao/regioes/${id}/editar`}>
-            <PencilIcon />
-            Editar
-          </Link>
-        </Button>
+        {hasPermissions(currentUser, ["regions.edit"]) && (
+          <Button variant="outline" asChild>
+            <Link href={`/gestao/regioes/${id}/editar`}>
+              <PencilIcon />
+              Editar
+            </Link>
+          </Button>
+        )}
       </div>
 
       {region.description ? (

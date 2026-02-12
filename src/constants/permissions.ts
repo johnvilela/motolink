@@ -10,17 +10,40 @@ export const permissionsConst = [
       "branches.create",
       "branches.edit",
       "branches.delete",
+      "groups.view",
+      "groups.create",
+      "groups.edit",
+      "groups.delete",
+      "regions.view",
+      "regions.create",
+      "regions.edit",
+      "regions.delete",
     ],
   },
   {
     role: "MANAGER",
-    permissions: ["users.view", "users.create", "users.edit", "users.delete"],
+    permissions: [
+      "users.view",
+      "users.create",
+      "users.edit",
+      "users.delete",
+      "groups.view",
+      "groups.create",
+      "groups.edit",
+      "groups.delete",
+      "regions.view",
+      "regions.create",
+      "regions.edit",
+      "regions.delete",
+    ],
   },
 ];
 
 export const PERMISSION_MODULES = [
   { key: "users", label: "Colaboradores" },
   { key: "branches", label: "Filiais" },
+  { key: "groups", label: "Grupos" },
+  { key: "regions", label: "Regioes" },
 ] as const;
 
 export const PERMISSION_ACTIONS = [

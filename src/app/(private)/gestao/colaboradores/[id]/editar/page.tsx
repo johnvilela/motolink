@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { ContentHeader } from "@/components/composite/content-header";
 import { UserForm } from "@/components/forms/user-form";
 import { branchesService } from "@/modules/branches/branches-service";
+import { getCurrentUser } from "@/modules/users/users-queries";
 import { usersService } from "@/modules/users/users-service";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
+import requirePermissions from "@/utils/require-permissions";
 
 interface EditarColaboradorPageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +17,9 @@ export default async function EditarColaboradorPage({
   params,
 }: EditarColaboradorPageProps) {
   const { id } = await params;
+
+  const currentUser = await getCurrentUser();
+  requirePermissions(currentUser, ["users.edit"], "Colaboradores");
 
   const [user, branches] = await Promise.all([
     usersService().getById(id),

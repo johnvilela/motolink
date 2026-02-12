@@ -125,7 +125,7 @@ export function groupsService() {
 
       await db.group.delete({ where: { id } });
 
-      const { clients, ...groupWithoutRelations } = existingGroup;
+      const { clients: _, ...groupWithoutRelations } = existingGroup;
 
       historyTracesService()
         .create({

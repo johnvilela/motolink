@@ -132,8 +132,11 @@ export function regionsService() {
 
       await db.region.delete({ where: { id } });
 
-      const { deliverymen, clients, ...regionWithoutRelations } =
-        existingRegion;
+      const {
+        deliverymen: _,
+        clients: __,
+        ...regionWithoutRelations
+      } = existingRegion;
 
       historyTracesService()
         .create({

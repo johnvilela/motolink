@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Text } from "@/components/ui/text";
 import { groupsService } from "@/modules/groups/groups-service";
+import { getCurrentUser } from "@/modules/users/users-queries";
+import { hasPermissions } from "@/utils/has-permissions";
+import requirePermissions from "@/utils/require-permissions";
 
 interface DetalheGrupoPageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +18,9 @@ export default async function DetalheGrupoPage({
   params,
 }: DetalheGrupoPageProps) {
   const { id } = await params;
+
+  const currentUser = await getCurrentUser();
+  requirePermissions(currentUser, ["groups.view"], "Grupos");
 
   const group = await groupsService().getById(id);
 
@@ -34,12 +40,14 @@ export default async function DetalheGrupoPage({
 
       <div className="flex items-center justify-between">
         <Heading variant="h3">{group.name}</Heading>
-        <Button variant="outline" asChild>
-          <Link href={`/gestao/grupos/${id}/editar`}>
-            <PencilIcon />
-            Editar
-          </Link>
-        </Button>
+        {hasPermissions(currentUser, ["groups.edit"]) && (
+          <Button variant="outline" asChild>
+            <Link href={`/gestao/grupos/${id}/editar`}>
+              <PencilIcon />
+              Editar
+            </Link>
+          </Button>
+        )}
       </div>
 
       {group.description ? (

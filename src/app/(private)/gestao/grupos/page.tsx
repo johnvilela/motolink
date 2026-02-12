@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
 import { groupsService } from "@/modules/groups/groups-service";
 import { groupListQuerySchema } from "@/modules/groups/groups-types";
+import { getCurrentUser } from "@/modules/users/users-queries";
+import { hasPermissions } from "@/utils/has-permissions";
+import requirePermissions from "@/utils/require-permissions";
 
 interface GruposPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -18,6 +21,9 @@ export default async function GruposPage({ searchParams }: GruposPageProps) {
   const params = await searchParams;
   const store = await cookies();
   const branchId = store.get(cookieConst.SELECTED_BRANCH)?.value;
+
+  const currentUser = await getCurrentUser();
+  requirePermissions(currentUser, ["groups.view"], "Grupos");
 
   const { page, pageSize, search } = groupListQuerySchema.parse({
     page: params.page ?? 1,
@@ -44,15 +50,22 @@ export default async function GruposPage({ searchParams }: GruposPageProps) {
 
       <div className="flex items-center justify-between gap-4">
         <TextSearch placeholder="Pesquisar por nome..." className="max-w-sm" />
-        <Button asChild>
-          <Link href="/gestao/grupos/novo">
-            <PlusIcon />
-            Novo grupo
-          </Link>
-        </Button>
+        {hasPermissions(currentUser, ["groups.create"]) && (
+          <Button asChild>
+            <Link href="/gestao/grupos/novo">
+              <PlusIcon />
+              Novo grupo
+            </Link>
+          </Button>
+        )}
       </div>
 
-      <GroupsTable groups={groups} />
+      <GroupsTable
+        groups={groups}
+        canView={hasPermissions(currentUser, ["groups.view"])}
+        canEdit={hasPermissions(currentUser, ["groups.edit"])}
+        canDelete={hasPermissions(currentUser, ["groups.delete"])}
+      />
 
       <TablePagination
         page={pagination.page}

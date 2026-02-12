@@ -38,9 +38,12 @@ import {
   PERMISSION_MODULES,
 } from "@/constants/permissions";
 import { branchesService } from "@/modules/branches/branches-service";
+import { getCurrentUser } from "@/modules/users/users-queries";
 import { usersService } from "@/modules/users/users-service";
+import { hasPermissions } from "@/utils/has-permissions";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
+import requirePermissions from "@/utils/require-permissions";
 
 function ReadOnlyPermissionsTable({ permissions }: { permissions: string[] }) {
   return (
@@ -97,6 +100,9 @@ export default async function DetalheColaboradorPage({
 }: DetalheColaboradorPageProps) {
   const { id } = await params;
 
+  const currentUser = await getCurrentUser();
+  requirePermissions(currentUser, ["users.view"], "Colaboradores");
+
   const user = await usersService().getById(id);
 
   if (!user) {
@@ -136,12 +142,14 @@ export default async function DetalheColaboradorPage({
           <Heading variant="h3">{user.name}</Heading>
           <StatusBadge status={user.status} />
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/gestao/colaboradores/${id}/editar`}>
-            <PencilIcon />
-            Editar
-          </Link>
-        </Button>
+        {hasPermissions(currentUser, ["users.edit"]) && (
+          <Button variant="outline" asChild>
+            <Link href={`/gestao/colaboradores/${id}/editar`}>
+              <PencilIcon />
+              Editar
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div>

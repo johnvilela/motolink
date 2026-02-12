@@ -44,7 +44,18 @@ interface UsersTableProps {
   users: User[];
 }
 
-export function UsersTable({ users }: UsersTableProps) {
+interface UsersTablePermissionFlags {
+  canView?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+export function UsersTable({
+  users,
+  canView = true,
+  canEdit = true,
+  canDelete = true,
+}: UsersTableProps & UsersTablePermissionFlags) {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -104,40 +115,48 @@ export function UsersTable({ users }: UsersTableProps) {
               <TableCell className="hidden md:table-cell" />
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/gestao/colaboradores/${user.id}`}>
-                          <EyeIcon />
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Ver detalhes</TooltipContent>
-                  </Tooltip>
+                  {canView && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link href={`/gestao/colaboradores/${user.id}`}>
+                            <EyeIcon />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Ver detalhes</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/gestao/colaboradores/${user.id}/editar`}>
-                          <PencilIcon />
-                        </Link>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Editar</TooltipContent>
-                  </Tooltip>
+                  {canEdit && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" asChild>
+                          <Link
+                            href={`/gestao/colaboradores/${user.id}/editar`}
+                          >
+                            <PencilIcon />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Editar</TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setDeleteTarget(user)}
-                      >
-                        <Trash2Icon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Excluir</TooltipContent>
-                  </Tooltip>
+                  {canDelete && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setDeleteTarget(user)}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Excluir</TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
