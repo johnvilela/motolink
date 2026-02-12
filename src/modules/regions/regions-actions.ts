@@ -13,15 +13,21 @@ async function getLoggedUserId() {
   return store.get(cookieConst.USER_ID)?.value ?? "";
 }
 
+async function getBranchId() {
+  const store = await cookies();
+  return store.get(cookieConst.SELECTED_BRANCH)?.value ?? "";
+}
+
 export const mutateRegionAction = safeAction
   .inputSchema(regionMutateSchema)
   .action(async ({ parsedInput }) => {
     const { id, ...data } = parsedInput;
     const loggedUserId = await getLoggedUserId();
+    const branchId = await getBranchId();
 
     const result = id
-      ? await regionsService().update(id, data, loggedUserId)
-      : await regionsService().create(data, loggedUserId);
+      ? await regionsService().update(id, { ...data, branchId }, loggedUserId)
+      : await regionsService().create({ ...data, branchId }, loggedUserId);
 
     if (result instanceof AppError) {
       return { error: result.message };

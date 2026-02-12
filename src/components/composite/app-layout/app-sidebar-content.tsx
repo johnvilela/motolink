@@ -73,7 +73,7 @@ const menuItems: MenuItem[] = [
       },
       {
         title: "Regiões",
-        url: "/gestao/regiao",
+        url: "/gestao/regioesC",
         requiredPermission: "region.view",
       },
       {
