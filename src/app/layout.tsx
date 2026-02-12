@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Sistema Motolink",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className="dark">{children}</body>
+      <body className="dark">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

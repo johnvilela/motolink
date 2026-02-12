@@ -45,9 +45,9 @@ export const mutateUserAction = safeAction
       return { error: result.message };
     }
 
-    revalidatePath("/rh/colaboradores");
+    revalidatePath("/gestao/colaboradores");
     if (id) {
-      revalidatePath(`/rh/colaboradores/${id}`);
+      revalidatePath(`/gestao/colaboradores/${id}`);
     }
 
     return { success: true, data: result };
@@ -61,7 +61,7 @@ export async function deleteUserAction(userId: string) {
     return { error: result.message };
   }
 
-  revalidatePath("/rh/colaboradores");
+  revalidatePath("/gestao/colaboradores");
 
   return { success: true } as const;
 }

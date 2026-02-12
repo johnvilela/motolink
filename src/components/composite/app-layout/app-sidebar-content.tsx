@@ -76,6 +76,10 @@ const menuItems: MenuItem[] = [
         url: "/gestao/regiao",
         requiredPermission: "region.view",
       },
+      {
+        title: "Colaboradores",
+        url: "/gestao/colaboradores",
+      },
     ],
   },
   // {
@@ -93,17 +97,6 @@ const menuItems: MenuItem[] = [
   //     },
   //   ],
   // },
-  {
-    title: "Recursos Humanos",
-    icon: BookUser,
-    requiredPermission: "user.view",
-    items: [
-      {
-        title: "Colaboradores",
-        url: "/rh/colaboradores",
-      },
-    ],
-  },
 ];
 
 export function AppSidebarContent() {
