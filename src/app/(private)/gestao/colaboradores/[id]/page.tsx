@@ -13,8 +13,6 @@ import {
   Paperclip,
   PencilIcon,
   Phone,
-  Shield,
-  UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -23,13 +21,7 @@ import { extractFilenameFromUrl } from "@/components/composite/file-input";
 import { StatusBadge } from "@/components/composite/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLegend,
-  FieldSet,
-  FieldTitle,
-} from "@/components/ui/field";
+import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -39,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Text } from "@/components/ui/text";
 import {
   buildPermissionKey,
   PERMISSION_ACTIONS,
@@ -48,26 +41,6 @@ import { branchesService } from "@/modules/branches/branches-service";
 import { usersService } from "@/modules/users/users-service";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
-
-function DetailField({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Field>
-      <FieldTitle>
-        <Icon className="size-4 text-muted-foreground" />
-        {label}
-      </FieldTitle>
-      <p className="text-sm">{children}</p>
-    </Field>
-  );
-}
 
 function ReadOnlyPermissionsTable({ permissions }: { permissions: string[] }) {
   return (
@@ -158,7 +131,11 @@ export default async function DetalheColaboradorPage({
         ]}
       />
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Heading variant="h3">{user.name}</Heading>
+          <StatusBadge status={user.status} />
+        </div>
         <Button variant="outline" asChild>
           <Link href={`/gestao/colaboradores/${id}/editar`}>
             <PencilIcon />
@@ -167,47 +144,56 @@ export default async function DetalheColaboradorPage({
         </Button>
       </div>
 
+      <div>
+        {user.branches.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {user.branches.map((branchId) => {
+              const branch = branchMap.get(branchId);
+              return (
+                <Badge key={branchId} variant="secondary">
+                  {branch ? branch.name : branchId}
+                </Badge>
+              );
+            })}
+          </div>
+        ) : (
+          <Text variant="muted">Nenhuma filial atribuída.</Text>
+        )}
+      </div>
+
       <div className="space-y-8">
-        <FieldSet>
-          <FieldLegend>Informação Pessoal</FieldLegend>
+        <section className="space-y-4">
+          <Heading variant="h4">Informação Pessoal</Heading>
 
-          <FieldGroup className="grid grid-cols-1 md:grid-cols-2">
-            <DetailField icon={UserIcon} label="Nome">
-              {user.name}
-            </DetailField>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="flex items-center gap-2">
+              <Mail className="size-4 text-muted-foreground" />
+              <Text variant="small">{user.email}</Text>
+            </div>
 
-            <DetailField icon={Mail} label="E-mail">
-              {user.email}
-            </DetailField>
+            <div className="flex items-center gap-2">
+              <Phone className="size-4 text-muted-foreground" />
+              <Text variant="small">{formattedPhone}</Text>
+            </div>
 
-            <DetailField icon={Phone} label="Telefone">
-              {formattedPhone}
-            </DetailField>
+            <div className="flex items-center gap-2">
+              <Calendar className="size-4 text-muted-foreground" />
+              <Text variant="small">{formattedBirthDate}</Text>
+            </div>
 
-            <DetailField icon={Calendar} label="Data de Nascimento">
-              {formattedBirthDate}
-            </DetailField>
+            <div className="flex items-center gap-2">
+              <FileText className="size-4 text-muted-foreground" />
+              <Text variant="small">{formattedDocument}</Text>
+            </div>
+          </div>
 
-            <DetailField icon={FileText} label="CPF/RG">
-              {formattedDocument}
-            </DetailField>
-
-            <Field>
-              <FieldTitle>
-                <Shield className="size-4 text-muted-foreground" />
-                Status
-              </FieldTitle>
-              <div>
-                <StatusBadge status={user.status} />
-              </div>
-            </Field>
-          </FieldGroup>
-
-          <Field className="mt-4">
-            <FieldTitle>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
               <Paperclip className="size-4 text-muted-foreground" />
-              Documentos
-            </FieldTitle>
+              <Text variant="small" className="font-medium">
+                Documentos
+              </Text>
+            </div>
             {userFiles.length > 0 ? (
               <ul className="flex flex-col gap-2">
                 {userFiles.map((url) => (
@@ -233,55 +219,40 @@ export default async function DetalheColaboradorPage({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhum documento anexado.
-              </p>
+              <Text variant="muted">Nenhum documento anexado.</Text>
             )}
-          </Field>
-        </FieldSet>
+          </div>
+        </section>
 
         <Separator />
 
-        <FieldSet>
-          <FieldLegend>Permissões e Acessos</FieldLegend>
+        <section className="space-y-4">
+          <Heading variant="h4">Permissões e Acessos</Heading>
 
-          <FieldGroup>
-            <Field>
-              <FieldTitle>
-                <Building className="size-4 text-muted-foreground" />
-                Filiais
-              </FieldTitle>
-              {user.branches.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {user.branches.map((branchId) => {
-                    const branch = branchMap.get(branchId);
-                    return (
-                      <Badge key={branchId} variant="secondary">
-                        {branch ? branch.name : branchId}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma filial atribuída.
-                </p>
-              )}
-            </Field>
+          <div className="flex items-center gap-2">
+            <Building className="size-4 shrink-0 text-muted-foreground" />
+          </div>
 
-            <DetailField icon={Briefcase} label="Cargo">
-              {user.role}
-            </DetailField>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Briefcase className="size-4 text-muted-foreground" />
+              <Text variant="small" className="font-medium">
+                Cargo
+              </Text>
+            </div>
+            <Text variant="small">{user.role}</Text>
+          </div>
 
-            <Field>
-              <FieldTitle>
-                <Lock className="size-4 text-muted-foreground" />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Lock className="size-4 text-muted-foreground" />
+              <Text variant="small" className="font-medium">
                 Permissões
-              </FieldTitle>
-              <ReadOnlyPermissionsTable permissions={user.permissions} />
-            </Field>
-          </FieldGroup>
-        </FieldSet>
+              </Text>
+            </div>
+            <ReadOnlyPermissionsTable permissions={user.permissions} />
+          </div>
+        </section>
       </div>
     </div>
   );
