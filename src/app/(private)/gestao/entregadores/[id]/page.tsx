@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
   Car,
@@ -21,7 +22,6 @@ import { extractFilenameFromUrl } from "@/components/composite/file-input";
 import { StatusBadge } from "@/components/composite/status-badge";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { ContractTypeOptions } from "@/constants/contract-type";
 import { deliverymanService } from "@/modules/deliveryman/deliveryman-service";
@@ -30,6 +30,30 @@ import { hasPermissions } from "@/utils/has-permissions";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
 import requirePermissions from "@/utils/require-permissions";
+
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label?: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <Icon className="size-4 text-muted-foreground" />
+      </div>
+      <div className="min-w-0">
+        {label && (
+          <p className="text-xs leading-none text-muted-foreground">{label}</p>
+        )}
+        <p className="truncate text-sm">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 interface DetalheEntregadorPageProps {
   params: Promise<{ id: string }>;
@@ -60,7 +84,7 @@ export default async function DetalheEntregadorPage({
       ?.label ?? deliveryman.contractType;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <ContentHeader
         breadcrumbItems={[
           { title: "Gestão", href: "/gestao" },
@@ -84,156 +108,122 @@ export default async function DetalheEntregadorPage({
         )}
       </div>
 
-      <div className="space-y-8">
-        <section className="space-y-4">
+      <div className="grid gap-6">
+        {/* Personal Info */}
+        <section className="space-y-5 rounded-xl border p-6">
           <Heading variant="h4">Informações Pessoais</Heading>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">CPF:</span> {formattedDocument}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Telefone:</span> {formattedPhone}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <UserIcon className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Tipo de Contrato:</span>{" "}
-                {contractTypeLabel}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <MapPin className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Região:</span>{" "}
-                {deliveryman.region?.name ?? "Não informado"}
-              </Text>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Paperclip className="size-4 text-muted-foreground" />
-              <Text variant="small" className="font-medium">
-                Documentos
-              </Text>
-            </div>
-            {deliveryman.files.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {deliveryman.files.map((url) => (
-                  <li
-                    key={url}
-                    className="flex items-center gap-3 rounded-md border bg-background p-3"
-                  >
-                    <FileIcon className="size-5 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {extractFilenameFromUrl(url)}
-                    </span>
-                    <Button variant="ghost" size="icon-sm" asChild>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Abrir ${extractFilenameFromUrl(url)}`}
-                      >
-                        <EyeIcon className="size-4" />
-                      </a>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Text variant="muted">Nenhum documento anexado.</Text>
-            )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <InfoItem icon={FileText} label="CPF" value={formattedDocument} />
+            <InfoItem icon={Phone} label="Telefone" value={formattedPhone} />
+            <InfoItem
+              icon={UserIcon}
+              label="Tipo de Contrato"
+              value={contractTypeLabel}
+            />
+            <InfoItem
+              icon={MapPin}
+              label="Região"
+              value={deliveryman.region?.name ?? "Não informado"}
+            />
           </div>
         </section>
 
-        <Separator />
+        {/* Documents */}
+        <section className="space-y-4 rounded-xl border p-6">
+          <div className="flex items-center gap-2">
+            <Paperclip className="size-4 text-muted-foreground" />
+            <Heading variant="h4">Documentos</Heading>
+          </div>
 
-        <section className="space-y-4">
-          <Heading variant="h4">Informações Financeiras</Heading>
+          {deliveryman.files.length > 0 ? (
+            <ul className="grid gap-2">
+              {deliveryman.files.map((url) => (
+                <li
+                  key={url}
+                  className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3"
+                >
+                  <FileIcon className="size-5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {extractFilenameFromUrl(url)}
+                  </span>
+                  <Button variant="ghost" size="icon-sm" asChild>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Abrir ${extractFilenameFromUrl(url)}`}
+                    >
+                      <EyeIcon className="size-4" />
+                    </a>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text variant="muted">Nenhum documento anexado.</Text>
+          )}
+        </section>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Key className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">PIX Principal:</span>{" "}
-                {deliveryman.mainPixKey}
-              </Text>
-            </div>
+        {/* Financial Info */}
+        <section className="space-y-5 rounded-xl border p-6">
+          <div className="flex items-center gap-2">
+            <Banknote className="size-4 text-muted-foreground" />
+            <Heading variant="h4">Informações Financeiras</Heading>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Key className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">PIX Secundária:</span>{" "}
-                {deliveryman.secondPixKey || "Não informado"}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Key className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">PIX Terciária:</span>{" "}
-                {deliveryman.thridPixKey || "Não informado"}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Landmark className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Agência:</span>{" "}
-                {deliveryman.agency || "Não informado"}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Banknote className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Conta:</span>{" "}
-                {deliveryman.account || "Não informado"}
-              </Text>
-            </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <InfoItem
+              icon={Key}
+              label="PIX Principal"
+              value={deliveryman.mainPixKey}
+            />
+            <InfoItem
+              icon={Key}
+              label="PIX Secundária"
+              value={deliveryman.secondPixKey || "Não informado"}
+            />
+            <InfoItem
+              icon={Key}
+              label="PIX Terciária"
+              value={deliveryman.thridPixKey || "Não informado"}
+            />
+            <InfoItem
+              icon={Landmark}
+              label="Agência"
+              value={deliveryman.agency || "Não informado"}
+            />
+            <InfoItem
+              icon={Banknote}
+              label="Conta"
+              value={deliveryman.account || "Não informado"}
+            />
           </div>
         </section>
 
-        <Separator />
+        {/* Vehicle */}
+        <section className="space-y-5 rounded-xl border p-6">
+          <div className="flex items-center gap-2">
+            <Car className="size-4 text-muted-foreground" />
+            <Heading variant="h4">Veículo</Heading>
+          </div>
 
-        <section className="space-y-4">
-          <Heading variant="h4">Veículo</Heading>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <Car className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Modelo:</span>{" "}
-                {deliveryman.vehicleModel || "Não informado"}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <RectangleEllipsis className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Placa:</span>{" "}
-                {deliveryman.vehiclePlate || "Não informado"}
-              </Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Palette className="size-4 text-muted-foreground" />
-              <Text variant="small">
-                <span className="font-medium">Cor:</span>{" "}
-                {deliveryman.vehicleColor || "Não informado"}
-              </Text>
-            </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <InfoItem
+              icon={Car}
+              label="Modelo"
+              value={deliveryman.vehicleModel || "Não informado"}
+            />
+            <InfoItem
+              icon={RectangleEllipsis}
+              label="Placa"
+              value={deliveryman.vehiclePlate || "Não informado"}
+            />
+            <InfoItem
+              icon={Palette}
+              label="Cor"
+              value={deliveryman.vehicleColor || "Não informado"}
+            />
           </div>
         </section>
       </div>

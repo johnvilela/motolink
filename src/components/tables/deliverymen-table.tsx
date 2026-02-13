@@ -42,6 +42,8 @@ import {
   deleteDeliverymanAction,
   toggleDeliverymanAction,
 } from "@/modules/deliveryman/deliveryman-actions";
+import { applyCpfMask } from "@/utils/masks/cpf-mask";
+import { applyPhoneMask } from "@/utils/masks/phone-mask";
 
 interface Deliveryman {
   id: string;
@@ -138,10 +140,12 @@ export function DeliverymenTable({
             <TableRow key={deliveryman.id}>
               <TableCell className="truncate">{deliveryman.name}</TableCell>
               <TableCell className="hidden truncate md:table-cell">
-                {deliveryman.document}
+                {deliveryman.document
+                  ? applyCpfMask(deliveryman.document)
+                  : "—"}
               </TableCell>
               <TableCell className="hidden truncate md:table-cell">
-                {deliveryman.phone}
+                {deliveryman.phone ? applyPhoneMask(deliveryman.phone) : "—"}
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <StatusBadge
