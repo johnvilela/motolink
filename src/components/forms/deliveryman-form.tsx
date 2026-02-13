@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { colorsConst } from "@/constants/colors";
 import { ContractTypeOptions } from "@/constants/contract-type";
+import { vehicleTypesConst } from "@/constants/vehicle-type";
 import { mutateDeliverymanAction } from "@/modules/deliveryman/deliveryman-actions";
 import {
   type DeliverymanMutateInput,
@@ -163,7 +165,7 @@ export function DeliverymanForm({
         <FieldLegend>Informações Pessoais</FieldLegend>
 
         <FieldGroup className="grid grid-cols-1 md:grid-cols-2">
-          <Field data-invalid={!!errors.name}>
+          <Field className="md:col-span-2" data-invalid={!!errors.name}>
             <FieldLabel htmlFor="name">Nome</FieldLabel>
             <Input
               id="name"
@@ -336,11 +338,26 @@ export function DeliverymanForm({
         <FieldGroup className="grid grid-cols-1 md:grid-cols-3">
           <Field data-invalid={!!errors.vehicleModel}>
             <FieldLabel htmlFor="vehicleModel">Modelo</FieldLabel>
-            <Input
-              id="vehicleModel"
-              placeholder="Modelo do veículo (opcional)"
-              aria-invalid={!!errors.vehicleModel}
-              {...register("vehicleModel")}
+            <Controller
+              name="vehicleModel"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger id="vehicleModel" className="w-full">
+                    <SelectValue placeholder="Selecione o modelo do veículo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleTypesConst.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             <FieldError errors={[errors.vehicleModel]} />
           </Field>
@@ -358,11 +375,26 @@ export function DeliverymanForm({
 
           <Field data-invalid={!!errors.vehicleColor}>
             <FieldLabel htmlFor="vehicleColor">Cor</FieldLabel>
-            <Input
-              id="vehicleColor"
-              placeholder="Cor do veículo (opcional)"
-              aria-invalid={!!errors.vehicleColor}
-              {...register("vehicleColor")}
+            <Controller
+              name="vehicleColor"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger id="vehicleColor" className="w-full">
+                    <SelectValue placeholder="Selecione a cor do veículo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colorsConst.map((color) => (
+                      <SelectItem key={color} value={color}>
+                        {color}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             <FieldError errors={[errors.vehicleColor]} />
           </Field>
