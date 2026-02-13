@@ -17,6 +17,10 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
     className:
       "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   },
+  [statusConst.BLOCKED]: {
+    label: "Bloqueado",
+    className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  },
 };
 
 interface StatusBadgeProps {
