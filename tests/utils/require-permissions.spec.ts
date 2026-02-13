@@ -13,23 +13,23 @@ describe("requirePermissions", () => {
   });
 
   it("returns undefined when hasPermissions returns true", () => {
-    (hasPermissions as unknown as any).mockReturnValue(true);
+    vi.mocked(hasPermissions).mockReturnValue(true);
 
     const result = requirePermissions({ role: "USER" }, ["A"]);
 
     expect(result).toBeUndefined();
-    expect((redirect as unknown as any).mock.calls.length).toBe(0);
+    expect(vi.mocked(redirect).mock.calls.length).toBe(0);
   });
 
   it("calls redirect with encoded moduleName when permission missing", () => {
-    (hasPermissions as unknown as any).mockReturnValue(false);
-    (redirect as unknown as any).mockReturnValue("REDIRECTED");
+    vi.mocked(hasPermissions).mockReturnValue(false);
+    vi.mocked(redirect).mockReturnValue("REDIRECTED" as never);
 
     const mod = "Módulo & X";
     const res = requirePermissions(null, ["A"], mod);
 
-    expect((redirect as unknown as any).mock.calls.length).toBe(1);
-    expect((redirect as unknown as any).mock.calls[0][0]).toBe(
+    expect(vi.mocked(redirect).mock.calls.length).toBe(1);
+    expect(vi.mocked(redirect).mock.calls[0][0]).toBe(
       `/nao-autorizado?moduleName=${encodeURIComponent(mod)}`,
     );
     expect(res).toBe("REDIRECTED");
