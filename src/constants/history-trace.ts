@@ -12,6 +12,7 @@ export const historyTraceEntityConst = {
   GROUP: "GROUP",
   REGION: "REGION",
   DELIVERYMAN: "DELIVERYMAN",
+  CLIENT: "CLIENT",
 } as const;
 
 export const historyTraceEntitiesArr = Object.values(historyTraceEntityConst);
