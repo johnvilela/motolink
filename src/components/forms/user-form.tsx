@@ -77,16 +77,18 @@ interface UserFormProps {
 interface PermissionsTableProps {
   permissions: string[];
   onPermissionToggle: (permission: string) => void;
+  isAdmin?: boolean;
 }
 
 function PermissionsTable({
   permissions,
   onPermissionToggle,
+  isAdmin = false,
 }: PermissionsTableProps) {
   const isChecked = useCallback(
     (module: PermissionModuleKey, action: PermissionActionKey) =>
-      permissions.includes(buildPermissionKey(module, action)),
-    [permissions],
+      isAdmin || permissions.includes(buildPermissionKey(module, action)),
+    [permissions, isAdmin],
   );
 
   return (
@@ -112,6 +114,7 @@ function PermissionsTable({
                   <Checkbox
                     checked={isChecked(module.key, action.key)}
                     onCheckedChange={() => onPermissionToggle(permissionKey)}
+                    disabled={isAdmin}
                     aria-label={`${action.label} ${module.label}`}
                   />
                 </TableCell>
@@ -384,6 +387,7 @@ export function UserForm({
                   <div className="rounded-lg bg-muted/50 p-4">
                     <PermissionsTable
                       permissions={permissions}
+                      isAdmin={watchedRole === "ADMIN"}
                       onPermissionToggle={(permission) => {
                         const updated = permissions.includes(permission)
                           ? permissions.filter((p) => p !== permission)

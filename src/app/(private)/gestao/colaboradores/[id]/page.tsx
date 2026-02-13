@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import type { LucideIcon } from "lucide-react";
 import {
   Ban,
   Briefcase,
@@ -22,7 +23,6 @@ import { StatusBadge } from "@/components/composite/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -45,49 +45,79 @@ import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
 import requirePermissions from "@/utils/require-permissions";
 
-function ReadOnlyPermissionsTable({ permissions }: { permissions: string[] }) {
+function InfoItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label?: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-lg bg-muted/50 p-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[150px]">Módulo</TableHead>
-            {PERMISSION_ACTIONS.map((action) => (
-              <TableHead key={action.key} className="text-center">
-                {action.label}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {PERMISSION_MODULES.map((module) => (
-            <TableRow key={module.key}>
-              <TableCell className="font-medium">{module.label}</TableCell>
-              {PERMISSION_ACTIONS.map((action) => {
-                const hasPermission = permissions.includes(
+    <div className="flex items-center gap-3">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <Icon className="size-4 text-muted-foreground" />
+      </div>
+      <div className="min-w-0">
+        {label && (
+          <p className="text-xs leading-none text-muted-foreground">{label}</p>
+        )}
+        <p className="truncate text-sm">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ReadOnlyPermissionsTable({
+  permissions,
+  isAdmin = false,
+}: {
+  permissions: string[];
+  isAdmin?: boolean;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-37.5">Módulo</TableHead>
+          {PERMISSION_ACTIONS.map((action) => (
+            <TableHead key={action.key} className="text-center">
+              {action.label}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {PERMISSION_MODULES.map((module) => (
+          <TableRow key={module.key}>
+            <TableCell className="font-medium">{module.label}</TableCell>
+            {PERMISSION_ACTIONS.map((action) => {
+              const hasPermission =
+                isAdmin ||
+                permissions.includes(
                   buildPermissionKey(module.key, action.key),
                 );
-                return (
-                  <TableCell key={action.key} className="text-center">
-                    {hasPermission ? (
-                      <CheckCircle2
-                        className="mx-auto size-4 text-green-600 dark:text-green-400"
-                        aria-label={`${module.label}: ${action.label} permitido`}
-                      />
-                    ) : (
-                      <Ban
-                        className="mx-auto size-4 text-red-500 dark:text-red-400"
-                        aria-label={`${module.label}: ${action.label} não permitido`}
-                      />
-                    )}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              return (
+                <TableCell key={action.key} className="text-center">
+                  {hasPermission ? (
+                    <CheckCircle2
+                      className="mx-auto size-4 text-green-600 dark:text-green-400"
+                      aria-label={`${module.label}: ${action.label} permitido`}
+                    />
+                  ) : (
+                    <Ban
+                      className="mx-auto size-4 text-muted-foreground/40"
+                      aria-label={`${module.label}: ${action.label} não permitido`}
+                    />
+                  )}
+                </TableCell>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -128,7 +158,7 @@ export default async function DetalheColaboradorPage({
   const userFiles = (user.files ?? []) as string[];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <ContentHeader
         breadcrumbItems={[
           { title: "Gestão", href: "/gestao" },
@@ -152,8 +182,9 @@ export default async function DetalheColaboradorPage({
         )}
       </div>
 
-      <div>
-        {user.branches.length > 0 ? (
+      {user.branches.length > 0 ? (
+        <div className="flex items-center gap-3">
+          <Building className="size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-wrap gap-2">
             {user.branches.map((branchId) => {
               const branch = branchMap.get(branchId);
@@ -164,101 +195,78 @@ export default async function DetalheColaboradorPage({
               );
             })}
           </div>
-        ) : (
-          <Text variant="muted">Nenhuma filial atribuída.</Text>
-        )}
-      </div>
+        </div>
+      ) : (
+        <Text variant="muted">Nenhuma filial atribuída.</Text>
+      )}
 
-      <div className="space-y-8">
-        <section className="space-y-4">
+      <div className="grid gap-6">
+        {/* Personal Info */}
+        <section className="space-y-5 rounded-xl border p-6">
           <Heading variant="h4">Informação Pessoal</Heading>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Mail className="size-4 text-muted-foreground" />
-              <Text variant="small">{user.email}</Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Phone className="size-4 text-muted-foreground" />
-              <Text variant="small">{formattedPhone}</Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-muted-foreground" />
-              <Text variant="small">{formattedBirthDate}</Text>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <FileText className="size-4 text-muted-foreground" />
-              <Text variant="small">{formattedDocument}</Text>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Paperclip className="size-4 text-muted-foreground" />
-              <Text variant="small" className="font-medium">
-                Documentos
-              </Text>
-            </div>
-            {userFiles.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {userFiles.map((url) => (
-                  <li
-                    key={url}
-                    className="flex items-center gap-3 rounded-md border bg-background p-3"
-                  >
-                    <FileIcon className="size-5 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {extractFilenameFromUrl(url)}
-                    </span>
-                    <Button variant="ghost" size="icon-sm" asChild>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Abrir ${extractFilenameFromUrl(url)}`}
-                      >
-                        <EyeIcon className="size-4" />
-                      </a>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <Text variant="muted">Nenhum documento anexado.</Text>
-            )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <InfoItem icon={Mail} value={user.email} />
+            <InfoItem icon={Phone} value={formattedPhone} />
+            <InfoItem
+              icon={Calendar}
+              label="Nascimento"
+              value={formattedBirthDate}
+            />
+            <InfoItem icon={FileText} label="CPF" value={formattedDocument} />
           </div>
         </section>
 
-        <Separator />
-
-        <section className="space-y-4">
-          <Heading variant="h4">Permissões e Acessos</Heading>
-
+        {/* Documents */}
+        <section className="space-y-4 rounded-xl border p-6">
           <div className="flex items-center gap-2">
-            <Building className="size-4 shrink-0 text-muted-foreground" />
+            <Paperclip className="size-4 text-muted-foreground" />
+            <Heading variant="h4">Documentos</Heading>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Briefcase className="size-4 text-muted-foreground" />
-              <Text variant="small" className="font-medium">
-                Cargo
-              </Text>
-            </div>
-            <Text variant="small">{user.role}</Text>
+          {userFiles.length > 0 ? (
+            <ul className="grid gap-2">
+              {userFiles.map((url) => (
+                <li
+                  key={url}
+                  className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3"
+                >
+                  <FileIcon className="size-5 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {extractFilenameFromUrl(url)}
+                  </span>
+                  <Button variant="ghost" size="icon-sm" asChild>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Abrir ${extractFilenameFromUrl(url)}`}
+                    >
+                      <EyeIcon className="size-4" />
+                    </a>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text variant="muted">Nenhum documento anexado.</Text>
+          )}
+        </section>
+
+        {/* Permissions & Access */}
+        <section className="space-y-5 rounded-xl border p-6">
+          <div className="flex items-center gap-2">
+            <Lock className="size-4 text-muted-foreground" />
+            <Heading variant="h4">Permissões e Acessos</Heading>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Lock className="size-4 text-muted-foreground" />
-              <Text variant="small" className="font-medium">
-                Permissões
-              </Text>
-            </div>
-            <ReadOnlyPermissionsTable permissions={user.permissions} />
+          <InfoItem icon={Briefcase} label="Cargo" value={user.role} />
+
+          <div className="overflow-x-auto rounded-lg bg-muted/50 p-4">
+            <ReadOnlyPermissionsTable
+              permissions={user.permissions}
+              isAdmin={user.role === "ADMIN"}
+            />
           </div>
         </section>
       </div>
