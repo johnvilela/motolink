@@ -22,9 +22,7 @@ async function createTestBranch(overrides: { name?: string } = {}) {
   });
 }
 
-async function createTestGroup(
-  overrides: { name?: string; description?: string; branchId?: string } = {},
-) {
+async function createTestGroup(overrides: { name?: string; description?: string; branchId?: string } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.group.create({
     data: {
@@ -35,11 +33,7 @@ async function createTestGroup(
   });
 }
 
-async function createTestClient(overrides: {
-  groupId?: string;
-  branchId?: string;
-  isDeleted?: boolean;
-} = {}) {
+async function createTestClient(overrides: { groupId?: string; branchId?: string; isDeleted?: boolean } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.client.create({
     data: {
@@ -176,11 +170,7 @@ describe("Groups Service", () => {
       const branch = await createTestBranch();
       const created = await createTestGroup({ branchId: branch.id });
 
-      const result = await service.update(
-        created.id,
-        { name: "Updated Group", branchId: branch.id },
-        LOGGED_USER_ID,
-      );
+      const result = await service.update(created.id, { name: "Updated Group", branchId: branch.id }, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().name).toBe("Updated Group");

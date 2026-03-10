@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Noto_Sans } from "next/font/google";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,8 +17,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", inter.variable)}>
-      <body>{children}</body>
+    <html lang="en" className={cn("font-sans", notoSans.variable)}>
+      <TooltipProvider>
+        <body>{children}</body>
+      </TooltipProvider>
     </html>
   );
 }

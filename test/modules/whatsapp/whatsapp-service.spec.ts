@@ -1,16 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import { db } from "../../../src/lib/database";
 import { whatsappMessageTypeConst } from "../../../src/constants/whatsapp";
+import { db } from "../../../src/lib/database";
 import { whatsappService } from "../../../src/modules/whatsapp/whatsapp-service";
 import { cleanDatabase } from "../../helpers/clean-database";
 
-async function createTestBranch(
-  overrides: {
-    whatsappUrl?: string | null;
-    whatsappApiKey?: string | null;
-  } = {},
-) {
+async function createTestBranch(overrides: { whatsappUrl?: string | null; whatsappApiKey?: string | null } = {}) {
   return db.branch.create({
     data: {
       name: "Test Branch",
@@ -77,9 +71,7 @@ describe("WhatsApp Service", () => {
     it("should return 502 when fetch returns a non-ok response", async () => {
       const branch = await createTestBranch();
 
-      vi.spyOn(global, "fetch").mockResolvedValueOnce(
-        new Response(null, { status: 500 }),
-      );
+      vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response(null, { status: 500 }));
 
       const result = await service.sendInvite({
         phone: "11999999999",
@@ -95,9 +87,7 @@ describe("WhatsApp Service", () => {
     it("should return 502 when fetch throws an error", async () => {
       const branch = await createTestBranch();
 
-      vi.spyOn(global, "fetch").mockRejectedValueOnce(
-        new Error("Network failure"),
-      );
+      vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("Network failure"));
 
       const result = await service.sendInvite({
         phone: "11999999999",
@@ -112,9 +102,7 @@ describe("WhatsApp Service", () => {
 
     it("should succeed and call the correct endpoint with headers", async () => {
       const branch = await createTestBranch();
-      const fetchSpy = vi
-        .spyOn(global, "fetch")
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response(null, { status: 200 }));
 
       const result = await service.sendInvite({
         phone: "11999999999",
@@ -136,9 +124,7 @@ describe("WhatsApp Service", () => {
 
     it("should prepend country code 55 when phone has none", async () => {
       const branch = await createTestBranch();
-      const fetchSpy = vi
-        .spyOn(global, "fetch")
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response(null, { status: 200 }));
 
       await service.sendInvite({
         phone: "11999999999",
@@ -153,9 +139,7 @@ describe("WhatsApp Service", () => {
 
     it("should not double-prefix when phone already starts with 55", async () => {
       const branch = await createTestBranch();
-      const fetchSpy = vi
-        .spyOn(global, "fetch")
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response(null, { status: 200 }));
 
       await service.sendInvite({
         phone: "5511999999999",
@@ -170,9 +154,7 @@ describe("WhatsApp Service", () => {
 
     it("should strip non-digit characters from phone before formatting", async () => {
       const branch = await createTestBranch();
-      const fetchSpy = vi
-        .spyOn(global, "fetch")
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce(new Response(null, { status: 200 }));
 
       await service.sendInvite({
         phone: "(11) 9-9999-9999",

@@ -22,9 +22,7 @@ async function createTestBranch(overrides: { name?: string } = {}) {
   });
 }
 
-async function createTestRegion(
-  overrides: { name?: string; branchId?: string } = {},
-) {
+async function createTestRegion(overrides: { name?: string; branchId?: string } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.region.create({
     data: {

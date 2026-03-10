@@ -47,26 +47,25 @@ async function main() {
   // ── Admin user ──
 
   for (const adminData of data.admins) {
-    const existing = await db.user.findUnique({
+    const user = await db.user.upsert({
       where: { email: adminData.email },
+      update: {
+        name: adminData.name,
+        password: await hash().create(adminData.password),
+        role: adminData.role,
+        status: adminData.status,
+        branches: branchIds,
+      },
+      create: {
+        name: adminData.name,
+        email: adminData.email,
+        password: await hash().create(adminData.password),
+        role: adminData.role,
+        status: adminData.status,
+        branches: branchIds,
+      },
     });
-
-    if (existing) {
-      console.log(`User already exists: ${existing.email}`);
-    } else {
-      const hashedPassword = await hash().create(adminData.password);
-
-      const user = await db.user.create({
-        data: {
-          name: adminData.name,
-          email: adminData.email,
-          password: hashedPassword,
-          role: adminData.role,
-          status: adminData.status,
-        },
-      });
-      console.log(`Created ADMIN: ${user.email}`);
-    }
+    console.log(`User ensured: ${user.email}`);
   }
 }
 

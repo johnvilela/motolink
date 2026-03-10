@@ -34,13 +34,7 @@ async function createTestBranch(overrides: { name?: string } = {}) {
 }
 
 async function createTestClient(
-  overrides: {
-    name?: string;
-    cnpj?: string;
-    branchId?: string;
-    groupId?: string;
-    regionId?: string;
-  } = {},
+  overrides: { name?: string; cnpj?: string; branchId?: string; groupId?: string; regionId?: string } = {},
 ) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.client.create({
@@ -63,13 +57,7 @@ async function createTestClient(
 }
 
 async function createTestPlanning(
-  overrides: {
-    clientId?: string;
-    branchId?: string;
-    plannedDate?: Date;
-    plannedCount?: number;
-    period?: string;
-  } = {},
+  overrides: { clientId?: string; branchId?: string; plannedDate?: Date; plannedCount?: number; period?: string } = {},
 ) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   const clientId = overrides.clientId ?? (await createTestClient({ branchId })).id;
@@ -98,10 +86,7 @@ describe("Planning Service", () => {
       const branch = await createTestBranch();
       const client = await createTestClient({ branchId: branch.id });
 
-      const result = await service.upsert(
-        { ...BASE_BODY, clientId: client.id, branchId: branch.id },
-        LOGGED_USER_ID,
-      );
+      const result = await service.upsert({ ...BASE_BODY, clientId: client.id, branchId: branch.id }, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
 

@@ -22,9 +22,7 @@ async function createTestBranch(overrides: { name?: string } = {}) {
   });
 }
 
-async function createTestRegion(
-  overrides: { name?: string; description?: string; branchId?: string } = {},
-) {
+async function createTestRegion(overrides: { name?: string; description?: string; branchId?: string } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.region.create({
     data: {
@@ -35,11 +33,7 @@ async function createTestRegion(
   });
 }
 
-async function createTestClient(overrides: {
-  regionId?: string;
-  branchId?: string;
-  isDeleted?: boolean;
-} = {}) {
+async function createTestClient(overrides: { regionId?: string; branchId?: string; isDeleted?: boolean } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.client.create({
     data: {
@@ -59,11 +53,7 @@ async function createTestClient(overrides: {
   });
 }
 
-async function createTestDeliveryman(overrides: {
-  regionId?: string;
-  branchId?: string;
-  isDeleted?: boolean;
-} = {}) {
+async function createTestDeliveryman(overrides: { regionId?: string; branchId?: string; isDeleted?: boolean } = {}) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   return db.deliveryman.create({
     data: {
@@ -196,11 +186,7 @@ describe("Regions Service", () => {
       const branch = await createTestBranch();
       const created = await createTestRegion({ branchId: branch.id });
 
-      const result = await service.update(
-        created.id,
-        { name: "Updated Region", branchId: branch.id },
-        LOGGED_USER_ID,
-      );
+      const result = await service.update(created.id, { name: "Updated Region", branchId: branch.id }, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().name).toBe("Updated Region");

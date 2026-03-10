@@ -16,9 +16,7 @@ const BASE_QUERY: BranchListQueryDTO = {
 
 // --- Test Data Factories -------------------------------------------------
 
-async function createTestBranch(
-  overrides: { name?: string; code?: string } = {},
-) {
+async function createTestBranch(overrides: { name?: string; code?: string } = {}) {
   return db.branch.create({
     data: {
       name: overrides.name ?? "Test Branch",
