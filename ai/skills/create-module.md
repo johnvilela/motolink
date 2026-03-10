@@ -1,3 +1,10 @@
+---
+name: create-module
+description: Scaffold a new feature module (types, service, optional server actions) following project conventions. Use when the user asks to create or add a new module.
+user-invocable: true
+allowed-tools: Read, Glob, Grep, Write, Edit, Bash
+---
+
 # Skill: create-module
 
 ## Inputs

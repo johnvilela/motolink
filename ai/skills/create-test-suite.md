@@ -1,3 +1,10 @@
+---
+name: create-test-suite
+description: Create a Vitest test suite (service integration or unit) for an existing source file. Use when the user asks to write or generate tests for a file.
+user-invocable: true
+allowed-tools: Read, Glob, Grep, Write, Edit, Bash
+---
+
 # Skill: create-test-suite
 
 ## Inputs
