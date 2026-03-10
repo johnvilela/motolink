@@ -1,7 +1,6 @@
-"use client";
-
-import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Slot } from "radix-ui";
+import type * as React from "react";
 
 import { cn } from "@/lib/cn";
 import { Spinner } from "./spinner";
@@ -42,11 +41,18 @@ const buttonVariants = cva(
   },
 );
 
-interface ButtonProps extends ButtonPrimitive.Props, VariantProps<typeof buttonVariants> {
-  isLoading?: boolean;
-}
-
-function Button({ className, variant = "default", size = "default", isLoading = false, ...props }: ButtonProps) {
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  asChild = false,
+  isLoading = false,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean;
+    isLoading?: boolean;
+  }) {
   if (isLoading) {
     return (
       <div
@@ -60,7 +66,17 @@ function Button({ className, variant = "default", size = "default", isLoading = 
     );
   }
 
-  return <ButtonPrimitive data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+  const Comp = asChild ? Slot.Root : "button";
+
+  return (
+    <Comp
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
 }
 
 export { Button, buttonVariants };

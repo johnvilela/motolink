@@ -14,7 +14,6 @@
     "seed": "pnpx tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@base-ui/react": "^1.2.0",
     "@hookform/resolvers": "5.2.0",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",
@@ -28,6 +27,7 @@
     "next": "16.1.6",
     "next-safe-action": "^8.1.8",
     "pg": "^8.20.0",
+    "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
