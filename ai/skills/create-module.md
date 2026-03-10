@@ -187,6 +187,7 @@ export function widgetsService() {
 - Return `errAsync({ reason: string, statusCode: number })` on all errors
 - Business/validation errors: use specific HTTP status codes (400, 401, 403, 404, 422)
 - Unexpected/DB errors: always use `statusCode: 500` and `console.error(...)` first
+- `reason` strings must be written in **Portuguese** — internal `console.error` messages stay in English
 - Use `db.*` directly from `@/lib/database` — no repository layer
 - Parallel DB queries: use `Promise.all([...])`
 - Services are stateless — each call to `widgetsService()` creates a fresh instance

@@ -9,6 +9,7 @@ export const historyTraceActionsArr = Object.values(historyTraceActionConst);
 export const historyTraceEntityConst = {
   USER: "USER",
   SESSION: "SESSION",
+  REGION: "REGION",
 } as const;
 
 export const historyTraceEntitiesArr = Object.values(historyTraceEntityConst);
