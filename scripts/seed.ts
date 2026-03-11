@@ -25,6 +25,80 @@ const data = {
       status: "ACTIVE",
     },
   ],
+  users: [
+    {
+      name: "Gerente RJ",
+      email: "gerente.rj@gmail.com",
+      password: "1234567Aa!",
+      role: "MANAGER",
+      status: "ACTIVE",
+      branchCode: "RJ",
+    },
+    {
+      name: "Gerente SP",
+      email: "gerente.sp@gmail.com",
+      password: "1234567Aa!",
+      role: "MANAGER",
+      status: "ACTIVE",
+      branchCode: "SP",
+    },
+    {
+      name: "Gerente Campinas",
+      email: "gerente.cam@gmail.com",
+      password: "1234567Aa!",
+      role: "MANAGER",
+      status: "ACTIVE",
+      branchCode: "CAM",
+    },
+    {
+      name: "Usuário RJ Pendente",
+      email: "user.rj.pending@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "PENDING",
+      branchCode: "RJ",
+    },
+    {
+      name: "Usuário RJ Bloqueado",
+      email: "user.rj.blocked@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "BLOCKED",
+      branchCode: "RJ",
+    },
+    {
+      name: "Usuário SP Pendente",
+      email: "user.sp.pending@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "PENDING",
+      branchCode: "SP",
+    },
+    {
+      name: "Usuário SP Bloqueado",
+      email: "user.sp.blocked@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "BLOCKED",
+      branchCode: "SP",
+    },
+    {
+      name: "Usuário Campinas Pendente",
+      email: "user.cam.pending@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "PENDING",
+      branchCode: "CAM",
+    },
+    {
+      name: "Usuário Campinas Bloqueado",
+      email: "user.cam.blocked@gmail.com",
+      password: "1234567Aa!",
+      role: "USER",
+      status: "BLOCKED",
+      branchCode: "CAM",
+    },
+  ],
 };
 
 async function main() {
@@ -63,6 +137,31 @@ async function main() {
         role: adminData.role,
         status: adminData.status,
         branches: branchIds,
+      },
+    });
+    console.log(`User ensured: ${user.email}`);
+  }
+
+  // ── Manager users ──
+
+  for (const userData of data.users) {
+    const branchId = branchRecords.find((b) => b.code === userData.branchCode)!.id;
+    const user = await db.user.upsert({
+      where: { email: userData.email },
+      update: {
+        name: userData.name,
+        password: await hash().create(userData.password),
+        role: userData.role,
+        status: userData.status,
+        branches: [branchId],
+      },
+      create: {
+        name: userData.name,
+        email: userData.email,
+        password: await hash().create(userData.password),
+        role: userData.role,
+        status: userData.status,
+        branches: [branchId],
       },
     });
     console.log(`User ensured: ${user.email}`);

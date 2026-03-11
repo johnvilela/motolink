@@ -85,7 +85,7 @@ export function usersService() {
 
     async listAll(query: UserListQueryDTO) {
       try {
-        const { page, pageSize, search, branchId } = query;
+        const { page, pageSize, search, branchId, status } = query;
         const skip = (page - 1) * pageSize;
 
         const where = {
@@ -99,6 +99,7 @@ export function usersService() {
           ...(branchId && {
             branches: { has: branchId },
           }),
+          ...(status && { status }),
         };
 
         const [total, data] = await Promise.all([

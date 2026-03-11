@@ -32,6 +32,7 @@ export const userListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().optional(),
   branchId: z.string().optional(),
+  status: z.string().optional(),
 });
 
 export type UserListQueryDTO = z.infer<typeof userListQuerySchema>;

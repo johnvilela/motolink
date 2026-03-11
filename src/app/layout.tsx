@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Noto_Sans } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
@@ -19,7 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <TooltipProvider>
-        <body>{children}</body>
+        <body>
+          {children}
+          <Toaster position="top-right" richColors />
+        </body>
       </TooltipProvider>
     </html>
   );
