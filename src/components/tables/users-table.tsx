@@ -91,8 +91,12 @@ export function UsersTable({
         <TableBody>
           {users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell className="truncate">{user.name}</TableCell>
-              <TableCell className="hidden truncate md:table-cell">{user.email}</TableCell>
+              <TableCell>
+                <span className="block truncate">{user.name}</span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">{user.email}</span>
+              </TableCell>
               <TableCell className="hidden md:table-cell">
                 <StatusBadge status={user.status} />
               </TableCell>

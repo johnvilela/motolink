@@ -99,9 +99,15 @@ export function DeliverymenTable({ deliverymen }: DeliverymenTableProps) {
         <TableBody>
           {deliverymen.map((deliveryman) => (
             <TableRow key={deliveryman.id}>
-              <TableCell className="truncate">{deliveryman.name}</TableCell>
-              <TableCell className="hidden md:table-cell">{applyPhoneMask(deliveryman.phone)}</TableCell>
-              <TableCell className="hidden md:table-cell">{applyCpfMask(deliveryman.document)}</TableCell>
+              <TableCell>
+                <span className="block truncate">{deliveryman.name}</span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">{applyPhoneMask(deliveryman.phone)}</span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">{applyCpfMask(deliveryman.document)}</span>
+              </TableCell>
               <TableCell className="hidden md:table-cell">
                 <StatusBadge status={deliveryman.isBlocked ? statusConst.BLOCKED : statusConst.ACTIVE} />
               </TableCell>

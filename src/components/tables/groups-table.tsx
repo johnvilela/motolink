@@ -76,8 +76,12 @@ export function GroupsTable({ groups }: GroupsTableProps) {
         <TableBody>
           {groups.map((group) => (
             <TableRow key={group.id}>
-              <TableCell className="truncate">{group.name}</TableCell>
-              <TableCell className="hidden truncate md:table-cell">{group.description || "—"}</TableCell>
+              <TableCell>
+                <span className="block truncate">{group.name}</span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">{group.description || "—"}</span>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
                   <Tooltip>

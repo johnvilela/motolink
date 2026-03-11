@@ -76,8 +76,12 @@ export function RegionsTable({ regions }: RegionsTableProps) {
         <TableBody>
           {regions.map((region) => (
             <TableRow key={region.id}>
-              <TableCell className="truncate">{region.name}</TableCell>
-              <TableCell className="hidden truncate md:table-cell">{region.description || "—"}</TableCell>
+              <TableCell>
+                <span className="block truncate">{region.name}</span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">{region.description || "—"}</span>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
                   <Tooltip>

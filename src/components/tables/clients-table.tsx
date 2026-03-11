@@ -78,12 +78,18 @@ export function ClientsTable({ clients }: ClientsTableProps) {
         <TableBody>
           {clients.map((client) => (
             <TableRow key={client.id}>
-              <TableCell className="truncate">{client.name}</TableCell>
-              <TableCell className="hidden md:table-cell">
-                {client.city}/{client.uf}
+              <TableCell>
+                <span className="block truncate">{client.name}</span>
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                {client.contactPhone ? applyPhoneMask(client.contactPhone) : "—"}
+                <span className="block truncate">
+                  {client.city}/{client.uf}
+                </span>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">
+                <span className="block truncate">
+                  {client.contactPhone ? applyPhoneMask(client.contactPhone) : "—"}
+                </span>
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
