@@ -377,11 +377,11 @@ describe("Clients Service", () => {
       expect(result.isOk()).toBe(true);
       const updated = result._unsafeUnwrap();
       expect(updated.regionId).toBe(nextRegion.id);
-      expect(updated.commercialCondition?.rainTax.toString()).toBe("4.5");
-      expect(updated.commercialCondition?.guaranteedDayTax.toString()).toBe("6.25");
-      expect(updated.commercialCondition?.guaranteedNightTax.toString()).toBe("7.75");
-      expect(updated.commercialCondition?.guaranteedDayWeekendTax.toString()).toBe("8.5");
-      expect(updated.commercialCondition?.guaranteedNightWeekendTax.toString()).toBe("9.25");
+      expect(updated.commercialCondition?.rainTax).toBe(4.5);
+      expect(updated.commercialCondition?.guaranteedDayTax).toBe(6.25);
+      expect(updated.commercialCondition?.guaranteedNightTax).toBe(7.75);
+      expect(updated.commercialCondition?.guaranteedDayWeekendTax).toBe(8.5);
+      expect(updated.commercialCondition?.guaranteedNightWeekendTax).toBe(9.25);
     });
 
     it("should return 404 when client is not found", async () => {

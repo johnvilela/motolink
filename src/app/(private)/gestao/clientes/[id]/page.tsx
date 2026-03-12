@@ -37,9 +37,8 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function formatCurrency(value: number | { toNumber?: () => number }) {
-  const num = typeof value === "number" ? value : (value?.toNumber?.() ?? Number(value));
-  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatCurrency(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function getBagsStatusLabel(status: string) {
@@ -142,9 +141,7 @@ export default async function ClientePage({ params }: ClientePageProps) {
           <InfoItem label="Fornece refeição?">{client.provideMeal ? "Sim" : "Não"}</InfoItem>
           {comm && (
             <>
-              <InfoItem label="Taxa de chuva">
-                {Number(comm.rainTax) > 0 ? formatCurrency(Number(comm.rainTax)) : "Não"}
-              </InfoItem>
+              <InfoItem label="Taxa de chuva">{comm.rainTax > 0 ? formatCurrency(comm.rainTax) : "Não"}</InfoItem>
               <InfoItem label="Área de entrega">{comm.deliveryAreaKm} km</InfoItem>
               <InfoItem label="Coberta pela Motolink?">{comm.isMotolinkCovered ? "Sim" : "Não"}</InfoItem>
             </>
@@ -166,12 +163,10 @@ export default async function ClientePage({ params }: ClientePageProps) {
 
         {comm && comm.paymentForm.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <InfoItem label="Cliente - Por Entrega">{formatCurrency(Number(comm.clientPerDelivery))}</InfoItem>
-            <InfoItem label="Cliente - Km Adicional">{formatCurrency(Number(comm.clientAdditionalKm))}</InfoItem>
-            <InfoItem label="Entregador - Por Entrega">{formatCurrency(Number(comm.deliverymanPerDelivery))}</InfoItem>
-            <InfoItem label="Entregador - Km Adicional">
-              {formatCurrency(Number(comm.deliverymanAdditionalKm))}
-            </InfoItem>
+            <InfoItem label="Cliente - Por Entrega">{formatCurrency(comm.clientPerDelivery)}</InfoItem>
+            <InfoItem label="Cliente - Km Adicional">{formatCurrency(comm.clientAdditionalKm)}</InfoItem>
+            <InfoItem label="Entregador - Por Entrega">{formatCurrency(comm.deliverymanPerDelivery)}</InfoItem>
+            <InfoItem label="Entregador - Km Adicional">{formatCurrency(comm.deliverymanAdditionalKm)}</InfoItem>
           </div>
         )}
 
@@ -190,37 +185,31 @@ export default async function ClientePage({ params }: ClientePageProps) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {comm.dailyPeriods.includes("WEEK_DAY") && (
                 <>
-                  <InfoItem label="Cliente - Semanal (Dia)">{formatCurrency(Number(comm.clientDailyDay))}</InfoItem>
-                  <InfoItem label="Entregador - Semanal (Dia)">
-                    {formatCurrency(Number(comm.deliverymanDailyDay))}
-                  </InfoItem>
+                  <InfoItem label="Cliente - Semanal (Dia)">{formatCurrency(comm.clientDailyDay)}</InfoItem>
+                  <InfoItem label="Entregador - Semanal (Dia)">{formatCurrency(comm.deliverymanDailyDay)}</InfoItem>
                 </>
               )}
               {comm.dailyPeriods.includes("WEEK_NIGHT") && (
                 <>
-                  <InfoItem label="Cliente - Semanal (Noite)">{formatCurrency(Number(comm.clientDailyNight))}</InfoItem>
-                  <InfoItem label="Entregador - Semanal (Noite)">
-                    {formatCurrency(Number(comm.deliverymanDailyNight))}
-                  </InfoItem>
+                  <InfoItem label="Cliente - Semanal (Noite)">{formatCurrency(comm.clientDailyNight)}</InfoItem>
+                  <InfoItem label="Entregador - Semanal (Noite)">{formatCurrency(comm.deliverymanDailyNight)}</InfoItem>
                 </>
               )}
               {comm.dailyPeriods.includes("WEEKEND_DAY") && (
                 <>
-                  <InfoItem label="Cliente - Fim de Semana (Dia)">
-                    {formatCurrency(Number(comm.clientDailyDayWknd))}
-                  </InfoItem>
+                  <InfoItem label="Cliente - Fim de Semana (Dia)">{formatCurrency(comm.clientDailyDayWknd)}</InfoItem>
                   <InfoItem label="Entregador - Fim de Semana (Dia)">
-                    {formatCurrency(Number(comm.deliverymanDailyDayWknd))}
+                    {formatCurrency(comm.deliverymanDailyDayWknd)}
                   </InfoItem>
                 </>
               )}
               {comm.dailyPeriods.includes("WEEKEND_NIGHT") && (
                 <>
                   <InfoItem label="Cliente - Fim de Semana (Noite)">
-                    {formatCurrency(Number(comm.clientDailyNightWknd))}
+                    {formatCurrency(comm.clientDailyNightWknd)}
                   </InfoItem>
                   <InfoItem label="Entregador - Fim de Semana (Noite)">
-                    {formatCurrency(Number(comm.deliverymanDailyNightWknd))}
+                    {formatCurrency(comm.deliverymanDailyNightWknd)}
                   </InfoItem>
                 </>
               )}
@@ -244,28 +233,26 @@ export default async function ClientePage({ params }: ClientePageProps) {
               {comm.guaranteedPeriods.includes("WEEK_DAY") && (
                 <>
                   <InfoItem label="Qt. Garantida - Semanal (Dia)">{comm.guaranteedDay}</InfoItem>
-                  <InfoItem label="Taxa - Semanal (Dia)">{formatCurrency(Number(comm.guaranteedDayTax))}</InfoItem>
+                  <InfoItem label="Taxa - Semanal (Dia)">{formatCurrency(comm.guaranteedDayTax)}</InfoItem>
                 </>
               )}
               {comm.guaranteedPeriods.includes("WEEK_NIGHT") && (
                 <>
                   <InfoItem label="Qt. Garantida - Semanal (Noite)">{comm.guaranteedNight}</InfoItem>
-                  <InfoItem label="Taxa - Semanal (Noite)">{formatCurrency(Number(comm.guaranteedNightTax))}</InfoItem>
+                  <InfoItem label="Taxa - Semanal (Noite)">{formatCurrency(comm.guaranteedNightTax)}</InfoItem>
                 </>
               )}
               {comm.guaranteedPeriods.includes("WEEKEND_DAY") && (
                 <>
                   <InfoItem label="Qt. Garantida - Fim de Semana (Dia)">{comm.guaranteedDayWeekend}</InfoItem>
-                  <InfoItem label="Taxa - Fim de Semana (Dia)">
-                    {formatCurrency(Number(comm.guaranteedDayWeekendTax))}
-                  </InfoItem>
+                  <InfoItem label="Taxa - Fim de Semana (Dia)">{formatCurrency(comm.guaranteedDayWeekendTax)}</InfoItem>
                 </>
               )}
               {comm.guaranteedPeriods.includes("WEEKEND_NIGHT") && (
                 <>
                   <InfoItem label="Qt. Garantida - Fim de Semana (Noite)">{comm.guaranteedNightWeekend}</InfoItem>
                   <InfoItem label="Taxa - Fim de Semana (Noite)">
-                    {formatCurrency(Number(comm.guaranteedNightWeekendTax))}
+                    {formatCurrency(comm.guaranteedNightWeekendTax)}
                   </InfoItem>
                 </>
               )}

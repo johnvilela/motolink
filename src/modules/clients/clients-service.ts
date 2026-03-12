@@ -1,6 +1,7 @@
 import { errAsync, okAsync } from "neverthrow";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
+import { convertDecimals } from "@/utils/convert-decimals";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import type { ClientListQueryDTO, ClientMutateDTO, ClientUpdateDTO } from "./clients-types";
 
@@ -26,7 +27,7 @@ export function clientsService() {
           })
           .catch(() => {});
 
-        return okAsync(client);
+        return okAsync(convertDecimals(client));
       } catch (error) {
         console.error("Error creating client:", error);
         return errAsync({ reason: "Não foi possível criar o cliente", statusCode: 500 });
@@ -128,7 +129,7 @@ export function clientsService() {
           })
           .catch(() => {});
 
-        return okAsync(updated);
+        return okAsync(convertDecimals(updated));
       } catch (error) {
         console.error("Error updating client:", error);
         return errAsync({ reason: "Não foi possível atualizar o cliente", statusCode: 500 });
@@ -146,7 +147,7 @@ export function clientsService() {
           return errAsync({ reason: "Cliente não encontrado", statusCode: 404 });
         }
 
-        return okAsync(client);
+        return okAsync(convertDecimals(client));
       } catch (error) {
         console.error("Error fetching client:", error);
         return errAsync({ reason: "Não foi possível buscar o cliente", statusCode: 500 });

@@ -14,7 +14,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             alt="Logo da Motolink"
             width={256}
             height={163}
-            className="mx-auto invert dark:invert-0"
+            className="mx-auto invert dark:invert-0 "
           />
 
           {children}

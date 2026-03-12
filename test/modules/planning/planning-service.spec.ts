@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 process.env.AUTH_SECRET ??= "test-secret";
 
+import { planningPeriodConst } from "../../../src/constants/planning-period";
 import { db } from "../../../src/lib/database";
 import { planningService } from "../../../src/modules/planning/planning-service";
 import type { PlanningUpsertDTO } from "../../../src/modules/planning/planning-types";
@@ -19,7 +20,7 @@ const BASE_BODY: PlanningUpsertDTO = {
   branchId: crypto.randomUUID(), // will be overridden in tests
   plannedDate: FUTURE_DATE,
   plannedCount: 10,
-  period: "diurno",
+  period: planningPeriodConst.DAYTIME,
 };
 
 // --- Test Data Factories -------------------------------------------------
@@ -67,7 +68,7 @@ async function createTestPlanning(
       branchId,
       plannedDate: overrides.plannedDate ?? FUTURE_DATE,
       plannedCount: overrides.plannedCount ?? 10,
-      period: overrides.period ?? "diurno",
+      period: overrides.period ?? planningPeriodConst.DAYTIME,
     },
   });
 }
@@ -94,7 +95,7 @@ describe("Planning Service", () => {
       expect(planning.clientId).toBe(client.id);
       expect(planning.branchId).toBe(branch.id);
       expect(planning.plannedCount).toBe(10);
-      expect(planning.period).toBe("diurno");
+      expect(planning.period).toBe(planningPeriodConst.DAYTIME);
     });
 
     it("should return 422 when plannedDate is in the past", async () => {
@@ -119,7 +120,7 @@ describe("Planning Service", () => {
         branchId: branch.id,
         plannedDate: FUTURE_DATE,
         plannedCount: 5,
-        period: "diurno",
+        period: planningPeriodConst.DAYTIME,
       };
 
       await service.upsert(body, LOGGED_USER_ID);
@@ -155,8 +156,8 @@ describe("Planning Service", () => {
 
   describe(".listAll", () => {
     it("should return paginated results", async () => {
-      await createTestPlanning({ period: "diurno" });
-      await createTestPlanning({ period: "noturno" });
+      await createTestPlanning({ period: planningPeriodConst.DAYTIME });
+      await createTestPlanning({ period: planningPeriodConst.NIGHTTIME });
       await createTestPlanning({ period: "vespertino" });
 
       const result = await service.listAll({ page: 1, pageSize: 2 });
