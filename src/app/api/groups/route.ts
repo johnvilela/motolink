@@ -5,8 +5,12 @@ import z from "zod";
 import { cookieConst } from "@/constants/cookies";
 import { groupsService } from "@/modules/groups/groups-service";
 import { groupListQuerySchema } from "@/modules/groups/groups-types";
+import { verifySession } from "@/utils/verify-session";
 
 export async function GET(request: NextRequest) {
+  const auth = await verifySession();
+  if (auth.error) return auth.error;
+
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

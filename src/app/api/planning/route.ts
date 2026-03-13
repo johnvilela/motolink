@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import z from "zod";
 import { cookieConst } from "@/constants/cookies";
-import { clientsService } from "@/modules/clients/clients-service";
-import { clientListQuerySchema } from "@/modules/clients/clients-types";
+import { planningService } from "@/modules/planning/planning-service";
+import { planningListQuerySchema } from "@/modules/planning/planning-types";
 import { verifySession } from "@/utils/verify-session";
 
 export async function GET(request: NextRequest) {
@@ -14,15 +14,14 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 
-  const small = request.nextUrl.searchParams.get("small") !== "false";
   const params = Object.fromEntries(request.nextUrl.searchParams);
-  const parsed = clientListQuerySchema.safeParse({ ...params, branchId });
+  const parsed = planningListQuerySchema.safeParse({ ...params, branchId });
 
   if (!parsed.success) {
     return NextResponse.json({ error: "Parâmetros inválidos", details: z.treeifyError(parsed.error) }, { status: 400 });
   }
 
-  const result = small ? await clientsService().listAllSmall(parsed.data) : await clientsService().listAll(parsed.data);
+  const result = await planningService().listAll(parsed.data);
 
   if (result.isErr()) {
     return NextResponse.json({ error: result.error.reason }, { status: result.error.statusCode });
