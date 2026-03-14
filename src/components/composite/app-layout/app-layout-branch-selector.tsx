@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cookieConst } from "@/constants/cookies";
+import { setClientCookie } from "@/utils/client-cookie";
 
 interface Branch {
   id: string;
@@ -24,7 +25,7 @@ interface AppLayoutBranchSelectorProps {
 }
 
 function handleBranchChange(branchId: string) {
-  document.cookie = `${cookieConst.SELECTED_BRANCH}=${branchId}; path=/; max-age=${60 * 60 * 24 * 365}`;
+  setClientCookie(cookieConst.SELECTED_BRANCH, branchId, { maxAge: 60 * 60 * 24 * 365 });
   window.location.reload();
 }
 

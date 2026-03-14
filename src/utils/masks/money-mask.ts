@@ -13,3 +13,15 @@ export function applyMoneyMask(value: string): string {
 
   return `R$ ${formattedInteger},${decimalPart}`;
 }
+
+export function formatMoneyDisplay(value: string | number | undefined | null): string {
+  if (value === null || value === undefined || value === "") return "R$ 0,00";
+
+  const num = typeof value === "string" ? Number.parseFloat(value) : value;
+  if (Number.isNaN(num)) return "R$ 0,00";
+
+  const [integerPart, decimalPart = "00"] = Math.abs(num).toFixed(2).split(".");
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+  return `R$ ${formattedInteger},${decimalPart}`;
+}

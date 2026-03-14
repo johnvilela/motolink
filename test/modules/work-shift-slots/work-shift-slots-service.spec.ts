@@ -36,6 +36,7 @@ const BASE_BODY: WorkShiftSlotMutateDTO = {
   deliverymanPerDeliveryDay: 0,
   deliverymanPerDeliveryNight: 0,
   isWeekendRate: false,
+  additionalTax: 0,
 };
 
 // --- Test Data Factories -------------------------------------------------
@@ -152,131 +153,135 @@ describe("Work Shift Slots Service", () => {
       expect(slot.deliveryman!.name).toBe("Test Deliveryman");
     });
 
-  describe(".getById", () => {
-    it("should return the work shift slot when found", async () => {
-      const created = await createTestWorkShiftSlot();
+    describe(".getById", () => {
+      it("should return the work shift slot when found", async () => {
+        const created = await createTestWorkShiftSlot();
 
-      const result = await service.getById(created.id);
+        const result = await service.getById(created.id);
 
-      expect(result.isOk()).toBe(true);
-      // biome-ignore lint/style/noNonNullAssertion: Test assertion
-      expect(result._unsafeUnwrap()!.id).toBe(created.id);
+        expect(result.isOk()).toBe(true);
+        // biome-ignore lint/style/noNonNullAssertion: Test assertion
+        expect(result._unsafeUnwrap()!.id).toBe(created.id);
+      });
+
+      it("should include client and deliveryman relations", async () => {
+        const branch = await createTestBranch();
+        const client = await createTestClient({ branchId: branch.id });
+        const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+        const created = await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman.id });
+
+        const result = await service.getById(created.id);
+
+        expect(result.isOk()).toBe(true);
+        const slot = result._unsafeUnwrap();
+        expect(slot.client.name).toBe("Test Client");
+        // biome-ignore lint/style/noNonNullAssertion: Test assertion
+        expect(slot.deliveryman!.name).toBe("Test Deliveryman");
+      });
+
+      it("should return 404 when not found", async () => {
+        const result = await service.getById(crypto.randomUUID());
+
+        expect(result.isErr()).toBe(true);
+        expect(result._unsafeUnwrapErr().statusCode).toBe(404);
+      });
     });
 
-    it("should include client and deliveryman relations", async () => {
-      const branch = await createTestBranch();
-      const client = await createTestClient({ branchId: branch.id });
-      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
-      const created = await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman.id });
+    describe(".listAll", () => {
+      it("should return paginated results", async () => {
+        const client = await createTestClient();
+        await createTestWorkShiftSlot({ clientId: client.id });
+        await createTestWorkShiftSlot({ clientId: client.id });
+        await createTestWorkShiftSlot({ clientId: client.id });
 
-      const result = await service.getById(created.id);
+        const result = await service.listAll({ page: 1, pageSize: 2 });
 
-      expect(result.isOk()).toBe(true);
-      const slot = result._unsafeUnwrap();
-      expect(slot.client.name).toBe("Test Client");
-      // biome-ignore lint/style/noNonNullAssertion: Test assertion
-      expect(slot.deliveryman!.name).toBe("Test Deliveryman");
+        expect(result.isOk()).toBe(true);
+        const { data, pagination } = result._unsafeUnwrap();
+        expect(data).toHaveLength(2);
+        expect(pagination.total).toBe(3);
+        expect(pagination.totalPages).toBe(2);
+      });
+
+      it("should filter by clientId", async () => {
+        const client1 = await createTestClient();
+        const client2 = await createTestClient();
+        await createTestWorkShiftSlot({ clientId: client1.id });
+        await createTestWorkShiftSlot({ clientId: client2.id });
+
+        const result = await service.listAll({ page: 1, pageSize: 10, clientId: client1.id });
+
+        expect(result.isOk()).toBe(true);
+        const { data } = result._unsafeUnwrap();
+        expect(data).toHaveLength(1);
+        expect(data[0].clientId).toBe(client1.id);
+      });
+
+      it("should filter by deliverymanId", async () => {
+        const branch = await createTestBranch();
+        const client = await createTestClient({ branchId: branch.id });
+        const deliveryman1 = await createTestDeliveryman({ branchId: branch.id });
+        const deliveryman2 = await createTestDeliveryman({ branchId: branch.id });
+        await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman1.id });
+        await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman2.id });
+
+        const result = await service.listAll({ page: 1, pageSize: 10, deliverymanId: deliveryman1.id });
+
+        expect(result.isOk()).toBe(true);
+        const { data } = result._unsafeUnwrap();
+        expect(data).toHaveLength(1);
+        expect(data[0].deliverymanId).toBe(deliveryman1.id);
+      });
+
+      it("should filter by status", async () => {
+        const client = await createTestClient();
+        await createTestWorkShiftSlot({ clientId: client.id, status: "OPEN" });
+        await createTestWorkShiftSlot({ clientId: client.id, status: "FILLED" });
+
+        const result = await service.listAll({ page: 1, pageSize: 10, status: "OPEN" });
+
+        expect(result.isOk()).toBe(true);
+        const { data } = result._unsafeUnwrap();
+        expect(data).toHaveLength(1);
+        expect(data[0].status).toBe("OPEN");
+      });
+
+      it("should filter by shiftDate", async () => {
+        const client = await createTestClient();
+        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-06-15") });
+        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-07-20") });
+
+        const result = await service.listAll({ page: 1, pageSize: 10, shiftDate: new Date("2099-06-15") });
+
+        expect(result.isOk()).toBe(true);
+        const { data } = result._unsafeUnwrap();
+        expect(data).toHaveLength(1);
+      });
+
+      it("should filter by search term (client name)", async () => {
+        const client1 = await createTestClient({ name: "Alpha Store" });
+        const client2 = await createTestClient({ name: "Beta Shop" });
+        await createTestWorkShiftSlot({ clientId: client1.id });
+        await createTestWorkShiftSlot({ clientId: client2.id });
+
+        const result = await service.listAll({ page: 1, pageSize: 10, search: "Alpha" });
+
+        expect(result.isOk()).toBe(true);
+        const { data } = result._unsafeUnwrap();
+        expect(data).toHaveLength(1);
+        expect(data[0].client.name).toBe("Alpha Store");
+      });
     });
-
-    it("should return 404 when not found", async () => {
-      const result = await service.getById(crypto.randomUUID());
-
-      expect(result.isErr()).toBe(true);
-      expect(result._unsafeUnwrapErr().statusCode).toBe(404);
-    });
-  });
-
-  describe(".listAll", () => {
-    it("should return paginated results", async () => {
-      const client = await createTestClient();
-      await createTestWorkShiftSlot({ clientId: client.id });
-      await createTestWorkShiftSlot({ clientId: client.id });
-      await createTestWorkShiftSlot({ clientId: client.id });
-
-      const result = await service.listAll({ page: 1, pageSize: 2 });
-
-      expect(result.isOk()).toBe(true);
-      const { data, pagination } = result._unsafeUnwrap();
-      expect(data).toHaveLength(2);
-      expect(pagination.total).toBe(3);
-      expect(pagination.totalPages).toBe(2);
-    });
-
-    it("should filter by clientId", async () => {
-      const client1 = await createTestClient();
-      const client2 = await createTestClient();
-      await createTestWorkShiftSlot({ clientId: client1.id });
-      await createTestWorkShiftSlot({ clientId: client2.id });
-
-      const result = await service.listAll({ page: 1, pageSize: 10, clientId: client1.id });
-
-      expect(result.isOk()).toBe(true);
-      const { data } = result._unsafeUnwrap();
-      expect(data).toHaveLength(1);
-      expect(data[0].clientId).toBe(client1.id);
-    });
-
-    it("should filter by deliverymanId", async () => {
-      const branch = await createTestBranch();
-      const client = await createTestClient({ branchId: branch.id });
-      const deliveryman1 = await createTestDeliveryman({ branchId: branch.id });
-      const deliveryman2 = await createTestDeliveryman({ branchId: branch.id });
-      await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman1.id });
-      await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman2.id });
-
-      const result = await service.listAll({ page: 1, pageSize: 10, deliverymanId: deliveryman1.id });
-
-      expect(result.isOk()).toBe(true);
-      const { data } = result._unsafeUnwrap();
-      expect(data).toHaveLength(1);
-      expect(data[0].deliverymanId).toBe(deliveryman1.id);
-    });
-
-    it("should filter by status", async () => {
-      const client = await createTestClient();
-      await createTestWorkShiftSlot({ clientId: client.id, status: "OPEN" });
-      await createTestWorkShiftSlot({ clientId: client.id, status: "FILLED" });
-
-      const result = await service.listAll({ page: 1, pageSize: 10, status: "OPEN" });
-
-      expect(result.isOk()).toBe(true);
-      const { data } = result._unsafeUnwrap();
-      expect(data).toHaveLength(1);
-      expect(data[0].status).toBe("OPEN");
-    });
-
-    it("should filter by shiftDate", async () => {
-      const client = await createTestClient();
-      await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-06-15") });
-      await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-07-20") });
-
-      const result = await service.listAll({ page: 1, pageSize: 10, shiftDate: new Date("2099-06-15") });
-
-      expect(result.isOk()).toBe(true);
-      const { data } = result._unsafeUnwrap();
-      expect(data).toHaveLength(1);
-    });
-
-    it("should filter by search term (client name)", async () => {
-      const client1 = await createTestClient({ name: "Alpha Store" });
-      const client2 = await createTestClient({ name: "Beta Shop" });
-      await createTestWorkShiftSlot({ clientId: client1.id });
-      await createTestWorkShiftSlot({ clientId: client2.id });
-
-      const result = await service.listAll({ page: 1, pageSize: 10, search: "Alpha" });
-
-      expect(result.isOk()).toBe(true);
-      const { data } = result._unsafeUnwrap();
-      expect(data).toHaveLength(1);
-      expect(data[0].client.name).toBe("Alpha Store");
-    });
-  });
 
     it("should update the work shift slot when id is provided", async () => {
       const client = await createTestClient();
       const created = await createTestWorkShiftSlot({ clientId: client.id });
 
-      const result = await service.upsert(created.id, { ...BASE_BODY, clientId: client.id, status: "FILLED" }, LOGGED_USER_ID);
+      const result = await service.upsert(
+        created.id,
+        { ...BASE_BODY, clientId: client.id, status: "FILLED" },
+        LOGGED_USER_ID,
+      );
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().status).toBe("FILLED");

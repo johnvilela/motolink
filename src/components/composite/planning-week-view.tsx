@@ -2,9 +2,10 @@
 
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { AlertCircleIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { PlanningPeriod } from "@/constants/planning-period";
 import { PlanningClientCard } from "./planning-client-card";
@@ -207,13 +208,17 @@ export function PlanningWeekView({
       </div>
 
       {!selectedGroupId && !selectedClientId ? (
-        <div className="flex items-center justify-center rounded-lg border border-dashed py-16">
-          <p className="text-muted-foreground">Selecione um grupo ou cliente para visualizar o planejamento</p>
-        </div>
+        <Alert>
+          <AlertCircleIcon />
+          <AlertTitle>Nenhum filtro selecionado</AlertTitle>
+          <AlertDescription>Selecione um grupo ou cliente para visualizar o planejamento</AlertDescription>
+        </Alert>
       ) : clientsData.length === 0 ? (
-        <div className="flex items-center justify-center rounded-lg border border-dashed py-16">
-          <p className="text-muted-foreground">Nenhum cliente encontrado para o filtro selecionado</p>
-        </div>
+        <Alert>
+          <AlertCircleIcon />
+          <AlertTitle>Nenhum resultado</AlertTitle>
+          <AlertDescription>Nenhum cliente encontrado para o filtro selecionado</AlertDescription>
+        </Alert>
       ) : (
         <div className="space-y-4">
           {clientsData.map((client) => (

@@ -42,12 +42,12 @@ export function SearchSelect({
         if (isOpen) onOpen?.();
       }}
     >
-      <div className={cn("relative", className)}>
+      <div className={cn("relative w-56", className)}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             size="sm"
-            className={cn("w-56 justify-between font-normal", !value && "text-muted-foreground")}
+            className={cn("w-full justify-between font-normal", !value && "text-muted-foreground")}
           >
             <span className="truncate">{selectedOption?.label ?? placeholder}</span>
             <ChevronsUpDownIcon className="ml-1 size-3.5 shrink-0 opacity-50" />
@@ -68,7 +68,7 @@ export function SearchSelect({
         )}
       </div>
 
-      <PopoverContent className="w-56 p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command shouldFilter={!onSearchChange}>
           <CommandInput placeholder={placeholder} onValueChange={onSearchChange} />
           <CommandList className="mt-1">

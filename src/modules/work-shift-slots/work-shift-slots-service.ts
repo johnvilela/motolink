@@ -1,4 +1,5 @@
 import { errAsync, okAsync } from "neverthrow";
+import type { Prisma } from "@/../generated/prisma/client";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { type WorkShiftSlotStatus, workShiftSlotStatusTransitions } from "@/constants/work-shift-slot-status";
 import { db } from "@/lib/database";
@@ -80,7 +81,7 @@ export function workShiftSlotsService() {
 
     async listAll(query: WorkShiftSlotListQueryDTO) {
       try {
-        const { page, pageSize, search, clientId, deliverymanId, status, shiftDate } = query;
+        const { page, pageSize, search, clientId, deliverymanId, status, shiftDate, groupId } = query;
         const skip = (page - 1) * pageSize;
 
         const where = {
@@ -88,6 +89,7 @@ export function workShiftSlotsService() {
           ...(deliverymanId && { deliverymanId }),
           ...(status && { status }),
           ...(shiftDate && { shiftDate }),
+          ...(groupId && { client: { groupId } }),
           ...(search && {
             OR: [
               { client: { name: { contains: search, mode: "insensitive" as const } } },
@@ -180,13 +182,41 @@ export function workShiftSlotsService() {
 
         const createdSlots = await Promise.all(
           sourceSlots.map((slot) => {
-            const { id, createdAt, updatedAt, logs, ...rest } = slot;
+            const slotData: Prisma.WorkShiftSlotUncheckedCreateInput = {
+              deliverymanId: slot.deliverymanId,
+              clientId: slot.clientId,
+              contractType: slot.contractType,
+              shiftDate: targetDate,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              period: slot.period,
+              auditStatus: slot.auditStatus,
+              checkInAt: slot.checkInAt,
+              checkOutAt: slot.checkOutAt,
+              inviteSentAt: slot.inviteSentAt,
+              inviteToken: slot.inviteToken,
+              inviteExpiresAt: slot.inviteExpiresAt,
+              trackingConnected: slot.trackingConnected,
+              trackingConnectedAt: slot.trackingConnectedAt,
+              additionalTax: slot.additionalTax,
+              additionalTaxReason: slot.additionalTaxReason,
+              deliverymanAmountDay: slot.deliverymanAmountDay,
+              deliverymanAmountNight: slot.deliverymanAmountNight,
+              deliverymanPaymentType: slot.deliverymanPaymentType,
+              deliverymenPaymentValue: slot.deliverymenPaymentValue,
+              paymentForm: slot.paymentForm,
+              guaranteedQuantityDay: slot.guaranteedQuantityDay,
+              guaranteedDayTax: slot.guaranteedDayTax,
+              guaranteedQuantityNight: slot.guaranteedQuantityNight,
+              guaranteedNightTax: slot.guaranteedNightTax,
+              deliverymanPerDeliveryDay: slot.deliverymanPerDeliveryDay,
+              deliverymanPerDeliveryNight: slot.deliverymanPerDeliveryNight,
+              isWeekendRate: slot.isWeekendRate,
+              status: slot.deliverymanId ? "INVITED" : "OPEN",
+            };
+
             return db.workShiftSlot.create({
-              data: {
-                ...rest,
-                shiftDate: targetDate,
-                status: slot.deliverymanId ? "INVITED" : "OPEN",
-              },
+              data: slotData,
               include,
             });
           }),

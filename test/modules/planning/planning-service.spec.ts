@@ -12,8 +12,12 @@ import { cleanDatabase } from "../../helpers/clean-database";
 
 const LOGGED_USER_ID = crypto.randomUUID();
 
-const FUTURE_DATE = new Date("2099-01-01");
-const PAST_DATE = new Date("2000-01-01");
+const FUTURE_DATE = "2099-01-01";
+const PAST_DATE = "2000-01-01";
+
+function toPlanningDateTime(dateOnly: string) {
+  return `${dateOnly}T00:00:00.000Z`;
+}
 
 const BASE_BODY: PlanningUpsertDTO = {
   clientId: crypto.randomUUID(), // will be overridden in tests
@@ -58,7 +62,13 @@ async function createTestClient(
 }
 
 async function createTestPlanning(
-  overrides: { clientId?: string; branchId?: string; plannedDate?: Date; plannedCount?: number; period?: string } = {},
+  overrides: {
+    clientId?: string;
+    branchId?: string;
+    plannedDate?: string;
+    plannedCount?: number;
+    period?: string;
+  } = {},
 ) {
   const branchId = overrides.branchId ?? (await createTestBranch()).id;
   const clientId = overrides.clientId ?? (await createTestClient({ branchId })).id;
@@ -66,7 +76,7 @@ async function createTestPlanning(
     data: {
       clientId,
       branchId,
-      plannedDate: overrides.plannedDate ?? FUTURE_DATE,
+      plannedDate: toPlanningDateTime(overrides.plannedDate ?? FUTURE_DATE),
       plannedCount: overrides.plannedCount ?? 10,
       period: overrides.period ?? planningPeriodConst.DAYTIME,
     },
@@ -155,18 +165,16 @@ describe("Planning Service", () => {
   });
 
   describe(".listAll", () => {
-    it("should return paginated results", async () => {
+    it("should return all results in the selected date range", async () => {
       await createTestPlanning({ period: planningPeriodConst.DAYTIME });
       await createTestPlanning({ period: planningPeriodConst.NIGHTTIME });
       await createTestPlanning({ period: "vespertino" });
 
-      const result = await service.listAll({ page: 1, pageSize: 2 });
+      const result = await service.listAll({ startAt: FUTURE_DATE });
 
       expect(result.isOk()).toBe(true);
-      const { data, pagination } = result._unsafeUnwrap();
-      expect(data).toHaveLength(2);
-      expect(pagination.total).toBe(3);
-      expect(pagination.totalPages).toBe(2);
+      const { data } = result._unsafeUnwrap();
+      expect(data).toHaveLength(3);
     });
 
     it("should filter by branchId", async () => {
@@ -178,7 +186,7 @@ describe("Planning Service", () => {
       await createTestPlanning({ clientId: client1.id, branchId: branch1.id });
       await createTestPlanning({ clientId: client2.id, branchId: branch2.id });
 
-      const result = await service.listAll({ page: 1, pageSize: 10, branchId: branch1.id });
+      const result = await service.listAll({ startAt: FUTURE_DATE, branchId: branch1.id });
 
       expect(result.isOk()).toBe(true);
       const { data } = result._unsafeUnwrap();
@@ -193,7 +201,7 @@ describe("Planning Service", () => {
       await createTestPlanning({ clientId: client1.id });
       await createTestPlanning({ clientId: client2.id });
 
-      const result = await service.listAll({ page: 1, pageSize: 10, clientId: client1.id });
+      const result = await service.listAll({ startAt: FUTURE_DATE, clientId: client1.id });
 
       expect(result.isOk()).toBe(true);
       const { data } = result._unsafeUnwrap();
@@ -202,21 +210,19 @@ describe("Planning Service", () => {
     });
 
     it("should filter by date range (startAt and endAt)", async () => {
-      await createTestPlanning({ plannedDate: new Date("2099-03-01") });
-      await createTestPlanning({ plannedDate: new Date("2099-06-15") });
-      await createTestPlanning({ plannedDate: new Date("2099-12-01") });
+      await createTestPlanning({ plannedDate: "2099-03-01" });
+      await createTestPlanning({ plannedDate: "2099-06-15" });
+      await createTestPlanning({ plannedDate: "2099-12-01" });
 
       const result = await service.listAll({
-        page: 1,
-        pageSize: 10,
-        startAt: new Date("2099-04-01"),
-        endAt: new Date("2099-09-30"),
+        startAt: "2099-04-01",
+        endAt: "2099-09-30",
       });
 
       expect(result.isOk()).toBe(true);
       const { data } = result._unsafeUnwrap();
       expect(data).toHaveLength(1);
-      expect(data[0].plannedDate).toEqual(new Date("2099-06-15"));
+      expect(data[0].plannedDate).toBe("2099-06-15");
     });
   });
 });

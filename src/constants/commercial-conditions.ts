@@ -15,5 +15,13 @@ export const COMMERCIAL_CONDITION_LABELS: Record<string, string> = {
   GUARANTEED: "Qt Garantida",
 };
 
+export const PAYMENT_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  PAYMENT_TYPES.map((t) => [t.value, t.label]),
+);
+
+export const PERIOD_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  PERIOD_TYPES.map((t) => [t.value, t.label]),
+);
+
 export type PaymentType = (typeof PAYMENT_TYPES)[number]["value"];
 export type PeriodType = (typeof PERIOD_TYPES)[number]["value"];

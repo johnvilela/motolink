@@ -60,9 +60,11 @@ export const clientListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().optional(),
+  clientId: z.string().optional(),
   groupId: z.string().optional(),
   regionId: z.string().optional(),
   branchId: z.string().optional(),
+  includes: z.array(z.string()).optional(),
 });
 
 export type ClientListQueryDTO = z.infer<typeof clientListQuerySchema>;

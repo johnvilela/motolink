@@ -145,7 +145,12 @@ async function main() {
   // ── Manager users ──
 
   for (const userData of data.users) {
-    const branchId = branchRecords.find((b) => b.code === userData.branchCode)!.id;
+    const branch = branchRecords.find((b) => b.code === userData.branchCode);
+    if (!branch) {
+      throw new Error(`Branch not found for code: ${userData.branchCode}`);
+    }
+
+    const branchId = branch.id;
     const user = await db.user.upsert({
       where: { email: userData.email },
       update: {

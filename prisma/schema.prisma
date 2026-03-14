@@ -233,27 +233,30 @@ model WorkShiftSlot {
   client                      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   status                      String
   contractType                String
-  shiftDate                   DateTime
-  startTime                   DateTime
-  endTime                     DateTime
+  shiftDate                   DateTime         @db.Date
+  startTime                   DateTime         @db.Time(3)
+  endTime                     DateTime         @db.Time(3)
   period                      String[]         @default(["daytime"])
   auditStatus                 String
   logs                        Json[]
-  checkInAt                   DateTime?
-  checkOutAt                  DateTime?
-  isFreelancer                Boolean          @default(false)
+  checkInAt                   DateTime?        @db.Time(3)
+  checkOutAt                  DateTime?        @db.Time(3)
   inviteSentAt                DateTime?
   inviteToken                 String?          @unique
   inviteExpiresAt             DateTime?
   trackingConnected           Boolean          @default(false)
   trackingConnectedAt         DateTime?
+  additionalTax               Decimal          @default(0) @db.Decimal(16, 2)
+  additionalTaxReason         String?
   deliverymanAmountDay        Decimal          @default(0) @db.Decimal(16, 2)
   deliverymanAmountNight      Decimal          @default(0) @db.Decimal(16, 2)
   deliverymanPaymentType      String           @default("")
   deliverymenPaymentValue     String           @default("")
   paymentForm                 String           @default("DAILY")
   guaranteedQuantityDay       Int              @default(0)
+  guaranteedDayTax            Decimal          @default(0) @db.Decimal(16, 2)
   guaranteedQuantityNight     Int              @default(0)
+  guaranteedNightTax          Decimal          @default(0) @db.Decimal(16, 2)
   deliverymanPerDeliveryDay   Decimal          @default(0) @db.Decimal(16, 2)
   deliverymanPerDeliveryNight Decimal          @default(0) @db.Decimal(16, 2)
   isWeekendRate               Boolean          @default(false)
@@ -313,9 +316,9 @@ model Event {
   id          String   @id @default(uuid(7))
   name        String
   description String?
-  date        DateTime
-  startHour   DateTime
-  endHour     DateTime
+  date        DateTime @db.Date
+  startHour   DateTime @db.Time(3)
+  endHour     DateTime @db.Time(3)
   branches    String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -330,7 +333,7 @@ model Planning {
   clientId     String
   client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   branchId     String
-  plannedDate  DateTime
+  plannedDate  DateTime @db.Date
   plannedCount Int
   period       String   @default("diurno")
   updatedAt    DateTime @updatedAt

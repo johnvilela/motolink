@@ -22,6 +22,8 @@ export const workShiftSlotMutateSchema = z.object({
   deliverymanPerDeliveryDay: z.coerce.number().default(0),
   deliverymanPerDeliveryNight: z.coerce.number().default(0),
   isWeekendRate: z.boolean().default(false),
+  additionalTax: z.coerce.number().default(0),
+  additionalTaxReason: z.string().optional(),
 });
 
 export type WorkShiftSlotMutateDTO = z.infer<typeof workShiftSlotMutateSchema>;
@@ -34,6 +36,7 @@ export const workShiftSlotListQuerySchema = z.object({
   deliverymanId: z.string().optional(),
   status: z.string().optional(),
   shiftDate: z.coerce.date().optional(),
+  groupId: z.string().uuid().optional(),
 });
 
 export type WorkShiftSlotListQueryDTO = z.infer<typeof workShiftSlotListQuerySchema>;

@@ -39,17 +39,20 @@ export default async function PlanejamentoPage({ searchParams }: PlanejamentoPag
   }
 
   const params = await searchParams;
-  const weekStart = params.week ? dayjs(params.week).startOf("isoWeek") : dayjs().startOf("isoWeek");
-  const weekEnd = weekStart.add(6, "day").endOf("day");
+  const requestedWeek = params.week ? dayjs(params.week) : dayjs();
+  const weekReference = requestedWeek.isValid() ? requestedWeek : dayjs();
+  const weekStart = weekReference.startOf("isoWeek");
+  const weekStartDate = weekStart.format("YYYY-MM-DD");
+  const weekEndDate = weekStart.add(6, "day").format("YYYY-MM-DD");
 
   const selectedGroupId = params.group || undefined;
   const selectedClientId = params.client || undefined;
 
   const [planningResult, clientsDataResult, selectedGroupResult] = await Promise.all([
-    planningService().listByWeek({
+    planningService().listAll({
       branchId,
-      startAt: weekStart.toDate(),
-      endAt: weekEnd.toDate(),
+      startAt: weekStartDate,
+      endAt: weekEndDate,
       ...(selectedGroupId && { groupId: selectedGroupId }),
       ...(selectedClientId && { clientId: selectedClientId }),
     }),
@@ -103,21 +106,23 @@ export default async function PlanejamentoPage({ searchParams }: PlanejamentoPag
   }
 
   const planningMap: Record<string, Record<string, Partial<Record<PlanningPeriod, number>>>> = {};
-  for (const record of planningResult.value) {
+
+  for (const record of planningResult.value.data) {
     const normalizedPeriod = normalizePlanningPeriod(record.period);
 
     if (!normalizedPeriod) {
       continue;
     }
 
-    const dateKey = dayjs(record.plannedDate).format("YYYY-MM-DD");
     if (!planningMap[record.clientId]) {
       planningMap[record.clientId] = {};
     }
-    if (!planningMap[record.clientId][dateKey]) {
-      planningMap[record.clientId][dateKey] = {};
+
+    if (!planningMap[record.clientId][record.plannedDate]) {
+      planningMap[record.clientId][record.plannedDate] = {};
     }
-    planningMap[record.clientId][dateKey][normalizedPeriod] = record.plannedCount;
+
+    planningMap[record.clientId][record.plannedDate][normalizedPeriod] = record.plannedCount;
   }
 
   return (
@@ -128,7 +133,7 @@ export default async function PlanejamentoPage({ searchParams }: PlanejamentoPag
       <PlanningWeekView
         clientsData={clientsData}
         planningMap={planningMap}
-        weekStart={weekStart.format("YYYY-MM-DD")}
+        weekStart={weekStartDate}
         selectedGroupId={selectedGroupId}
         selectedGroupName={selectedGroupName}
         selectedClientId={selectedClientId}

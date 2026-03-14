@@ -1,0 +1,245 @@
+"use client";
+
+import {
+  BanknoteIcon,
+  CloudRainIcon,
+  CreditCardIcon,
+  MapPinIcon,
+  MoonIcon,
+  PackageIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+  SunIcon,
+  TruckIcon,
+  UtensilsIcon,
+} from "lucide-react";
+import { useState } from "react";
+import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PAYMENT_TYPE_LABELS, PERIOD_TYPE_LABELS } from "@/constants/commercial-conditions";
+import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
+import { formatMoneyDisplay } from "@/utils/masks/money-mask";
+import { MonitoringPlanningRow } from "./monitoring-planning-row";
+import { MonitoringWorkShiftRow } from "./monitoring-work-shift-row";
+
+interface CommercialCondition {
+  bagsStatus?: string;
+  bagsAllocated?: number;
+  paymentForm?: string[];
+  dailyPeriods?: string[];
+  guaranteedPeriods?: string[];
+  deliveryAreaKm?: number;
+  isMotolinkCovered?: boolean;
+  rainTax?: number | string;
+  guaranteedDay?: number;
+  guaranteedDayWeekend?: number;
+  guaranteedNight?: number;
+  guaranteedNightWeekend?: number;
+  guaranteedDayTax?: number | string;
+  guaranteedNightTax?: number | string;
+  guaranteedDayWeekendTax?: number | string;
+  guaranteedNightWeekendTax?: number | string;
+  clientDailyDay?: number | string;
+  clientDailyDayWknd?: number | string;
+  clientDailyNight?: number | string;
+  clientDailyNightWknd?: number | string;
+  clientPerDelivery?: number | string;
+  clientAdditionalKm?: number | string;
+  deliverymanDailyDay?: number | string;
+  deliverymanDailyDayWknd?: number | string;
+  deliverymanDailyNight?: number | string;
+  deliverymanDailyNightWknd?: number | string;
+  deliverymanPerDelivery?: number | string;
+  deliverymanAdditionalKm?: number | string;
+}
+
+interface ClientData {
+  id: string;
+  name: string;
+  street: string;
+  number: string;
+  complement?: string | null;
+  city: string;
+  neighborhood: string;
+  uf: string;
+  provideMeal: boolean;
+  commercialCondition?: CommercialCondition | null;
+}
+
+interface WorkShiftSlot {
+  id: string;
+  clientId: string;
+  status: string;
+  contractType: string;
+  period: string[];
+  startTime: string;
+  endTime: string;
+  checkInAt?: string | null;
+  checkOutAt?: string | null;
+  deliverymenPaymentValue: string;
+  deliveryman?: { id: string; name: string } | null;
+}
+
+interface PlanningRecord {
+  clientId: string;
+  period: string;
+  plannedCount: number;
+}
+
+interface MonitoringClientCardProps {
+  client: ClientData;
+  plannings: PlanningRecord[];
+  workShiftSlots: WorkShiftSlot[];
+  shiftDate: string;
+}
+
+function isNonEmpty(val: unknown): boolean {
+  if (val === null || val === undefined) return false;
+  if (typeof val === "number") return val !== 0;
+  if (typeof val === "string") return val !== "" && val !== "0" && val !== "0.00";
+  if (Array.isArray(val)) return val.length > 0;
+  return Boolean(val);
+}
+
+export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftDate }: MonitoringClientCardProps) {
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const cc = client.commercialCondition;
+
+  const addressParts = [client.street, client.number].filter(Boolean).join(", ");
+  const addressSuffix = [client.complement, client.neighborhood, `${client.city}/${client.uf}`]
+    .filter(Boolean)
+    .join(" - ");
+  const address = [addressParts, addressSuffix].filter(Boolean).join(" - ");
+
+  const conditions: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [];
+  if (client.provideMeal) conditions.push({ icon: UtensilsIcon, label: "Fornece refeição" });
+  if (cc) {
+    if (isNonEmpty(cc.bagsAllocated))
+      conditions.push({ icon: PackageIcon, label: `Bags: ${cc.bagsAllocated} (${cc.bagsStatus})` });
+    if (isNonEmpty(cc.deliveryAreaKm))
+      conditions.push({ icon: MapPinIcon, label: `Área de entrega: ${cc.deliveryAreaKm} km` });
+    if (cc.isMotolinkCovered) conditions.push({ icon: ShieldCheckIcon, label: "Cobertura Motolink" });
+    if (isNonEmpty(cc.rainTax))
+      conditions.push({ icon: CloudRainIcon, label: `Taxa chuva: ${formatMoneyDisplay(cc.rainTax)}` });
+    if (isNonEmpty(cc.paymentForm))
+      conditions.push({
+        icon: CreditCardIcon,
+        label: `Pagamento: ${cc.paymentForm?.map((v) => PAYMENT_TYPE_LABELS[v] ?? v).join(", ")}`,
+      });
+    if (isNonEmpty(cc.dailyPeriods))
+      conditions.push({
+        icon: SunIcon,
+        label: `Períodos diários: ${cc.dailyPeriods?.map((v) => PERIOD_TYPE_LABELS[v] ?? v).join(", ")}`,
+      });
+    if (isNonEmpty(cc.guaranteedPeriods))
+      conditions.push({
+        icon: MoonIcon,
+        label: `Períodos garantidos: ${cc.guaranteedPeriods?.map((v) => PERIOD_TYPE_LABELS[v] ?? v).join(", ")}`,
+      });
+    if (isNonEmpty(cc.guaranteedDay) || isNonEmpty(cc.guaranteedNight))
+      conditions.push({
+        icon: BanknoteIcon,
+        label: `Garantidos: Dia ${cc.guaranteedDay ?? 0} / Noite ${cc.guaranteedNight ?? 0}`,
+      });
+    if (isNonEmpty(cc.clientDailyDay) || isNonEmpty(cc.deliverymanDailyDay))
+      conditions.push({
+        icon: TruckIcon,
+        label: `Diária: Cliente ${formatMoneyDisplay(cc.clientDailyDay)} / Entregador ${formatMoneyDisplay(cc.deliverymanDailyDay)}`,
+      });
+  }
+
+  const periods: PlanningPeriod[] = [planningPeriodConst.DAYTIME, planningPeriodConst.NIGHTTIME];
+
+  const renderPeriodRows = (period: PlanningPeriod) => {
+    const planning = plannings.find((p) => p.period === period);
+    const plannedCount = planning?.plannedCount ?? 0;
+    const periodSlots = workShiftSlots.filter((s) => s.period.some((p) => p.toUpperCase() === period));
+    const periodLabel = PLANNING_PERIOD_LABELS[period];
+
+    const rows: React.ReactNode[] = [];
+
+    for (const slot of periodSlots) {
+      rows.push(
+        <MonitoringWorkShiftRow
+          key={slot.id}
+          slot={slot}
+          periodLabel={periodLabel}
+          period={period}
+          client={client}
+          shiftDate={shiftDate}
+        />,
+      );
+    }
+
+    const vacantCount = Math.max(0, plannedCount - periodSlots.length);
+    for (let i = 0; i < vacantCount; i++) {
+      rows.push(
+        <MonitoringPlanningRow
+          key={`vacant-${period}-${i}`}
+          periodLabel={periodLabel}
+          period={period}
+          client={client}
+          shiftDate={shiftDate}
+        />,
+      );
+    }
+
+    return rows;
+  };
+
+  const allRows = periods.flatMap(renderPeriodRows);
+
+  return (
+    <>
+      <Card size="sm">
+        <CardHeader>
+          <div className="min-w-0">
+            <CardTitle>{client.name}</CardTitle>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{address}</p>
+          </div>
+          {conditions.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {conditions.map((c) => (
+                <Badge key={c.label} variant="secondary" className="gap-1 text-xs font-normal">
+                  <c.icon className="size-3" />
+                  {c.label}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {allRows.length > 0 ? (
+              allRows
+            ) : (
+              <div className="flex items-center justify-center rounded-lg border border-dashed py-6">
+                <p className="text-sm text-muted-foreground">Nenhum turno ou planejamento para este dia</p>
+              </div>
+            )}
+          </div>
+          <div className="mt-3">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setAddSheetOpen(true)}>
+              <PlusIcon className="mr-1 size-3.5" />
+              Adicionar entregador
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Sheet open={addSheetOpen} onOpenChange={setAddSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-[30vw]">
+          <SheetHeader>
+            <SheetTitle>Adicionar entregador</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-4">
+            <WorkShiftSlotForm client={client} shiftDate={shiftDate} onSuccess={() => setAddSheetOpen(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}

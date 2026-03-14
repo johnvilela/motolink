@@ -3,16 +3,18 @@ import { errAsync, okAsync } from "neverthrow";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
 import { historyTracesService } from "../history-traces/history-traces-service";
-import type { PlanningListQueryDTO, PlanningUpsertDTO, PlanningWeekQueryDTO } from "./planning-types";
+import { planningTransformer } from "./planning-transformer";
+import type { PlanningListQueryDTO, PlanningUpsertDTO } from "./planning-types";
 
 export function planningService() {
   return {
     async upsert(body: PlanningUpsertDTO, loggedUserId: string) {
       try {
-        const today = dayjs().startOf("day");
-        const plannedDate = dayjs(body.plannedDate).startOf("day");
+        const today = dayjs().format("YYYY-MM-DD");
+        const plannedDate = body.plannedDate;
+        const plannedDateTime = dayjs(plannedDate).toISOString();
 
-        if (plannedDate.isBefore(today, "day")) {
+        if (plannedDate < today) {
           return errAsync({
             reason: "Não é possível criar ou editar planejamentos para datas anteriores ao dia atual",
             statusCode: 422,
@@ -20,12 +22,11 @@ export function planningService() {
         }
 
         const { clientId, branchId, plannedCount, period } = body;
-        const normalizedPlannedDate = plannedDate.toDate();
 
         const planning = await db.planning.upsert({
-          where: { clientId_plannedDate_period: { clientId, plannedDate: normalizedPlannedDate, period } },
-          create: { clientId, branchId, plannedDate: normalizedPlannedDate, plannedCount, period },
-          update: { clientId, branchId, plannedDate: normalizedPlannedDate, plannedCount, period },
+          where: { clientId_plannedDate_period: { clientId, plannedDate: plannedDateTime, period } },
+          create: { clientId, branchId, plannedDate: plannedDateTime, plannedCount, period },
+          update: { branchId, plannedDate: plannedDateTime, plannedCount, period },
         });
 
         historyTracesService()
@@ -38,7 +39,7 @@ export function planningService() {
           })
           .catch(() => {});
 
-        return okAsync(planning);
+        return okAsync(planningTransformer(planning));
       } catch (error) {
         console.error("Error upserting planning:", error);
         return errAsync({ reason: "Não foi possível salvar o planejamento", statusCode: 500 });
@@ -47,8 +48,9 @@ export function planningService() {
 
     async listAll(query: PlanningListQueryDTO) {
       try {
-        const { page, pageSize, branchId, groupId, regionId, clientId, startAt, endAt } = query;
-        const skip = (page - 1) * pageSize;
+        const { branchId, groupId, regionId, clientId, startAt, endAt } = query;
+        const startAtDateTime = startAt ? dayjs(startAt).toISOString() : undefined;
+        const endAtDateTime = endAt ? dayjs(endAt).toISOString() : undefined;
 
         const where = {
           ...(branchId && { branchId }),
@@ -61,55 +63,25 @@ export function planningService() {
           }),
           ...((startAt || endAt) && {
             plannedDate: {
-              ...(startAt && { gte: startAt }),
-              ...(endAt && { lte: endAt }),
+              ...(startAtDateTime && { gte: startAtDateTime }),
+              ...(endAtDateTime && { lte: endAtDateTime }),
             },
           }),
         };
 
-        const [total, data] = await Promise.all([
-          db.planning.count({ where }),
-          db.planning.findMany({
+        const data = (
+          await db.planning.findMany({
             where,
-            skip,
-            take: pageSize,
             orderBy: { plannedDate: "desc" },
-          }),
-        ]);
+          })
+        ).map((record) => planningTransformer(record));
 
         return okAsync({
           data,
-          pagination: {
-            page,
-            pageSize,
-            total,
-            totalPages: Math.ceil(total / pageSize),
-          },
         });
       } catch (error) {
         console.error("Error listing plannings:", error);
         return errAsync({ reason: "Não foi possível listar os planejamentos", statusCode: 500 });
-      }
-    },
-
-    async listByWeek(query: PlanningWeekQueryDTO) {
-      try {
-        const { branchId, startAt, endAt, groupId, clientId } = query;
-
-        const data = await db.planning.findMany({
-          where: {
-            branchId,
-            plannedDate: { gte: startAt, lte: endAt },
-            ...(clientId && { clientId }),
-            ...(groupId && { client: { groupId } }),
-          },
-          orderBy: { plannedDate: "asc" },
-        });
-
-        return okAsync(data);
-      } catch (error) {
-        console.error("Error listing plannings by week:", error);
-        return errAsync({ reason: "Não foi possível listar os planejamentos da semana", statusCode: 500 });
       }
     },
 
@@ -121,7 +93,7 @@ export function planningService() {
           return errAsync({ reason: "Planejamento não encontrado", statusCode: 404 });
         }
 
-        return okAsync(planning);
+        return okAsync(planningTransformer(planning));
       } catch (error) {
         console.error("Error fetching planning:", error);
         return errAsync({ reason: "Não foi possível buscar o planejamento", statusCode: 500 });

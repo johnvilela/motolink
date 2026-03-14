@@ -156,11 +156,12 @@ export function clientsService() {
 
     async listAll(query: ClientListQueryDTO) {
       try {
-        const { page, pageSize, search, branchId, groupId, regionId } = query;
+        const { page, pageSize, search, clientId, branchId, groupId, regionId, includes } = query;
         const skip = (page - 1) * pageSize;
 
         const where = {
           isDeleted: false,
+          ...(clientId && { id: clientId }),
           ...(branchId && { branchId }),
           ...(groupId && { groupId }),
           ...(regionId && { regionId }),
@@ -180,6 +181,7 @@ export function clientsService() {
               branch: { select: { id: true, name: true } },
               group: { select: { id: true, name: true } },
               region: { select: { id: true, name: true } },
+              commercialCondition: includes?.includes("commercialCondition") ? { select: { id: true } } : false,
             },
           }),
         ]);
@@ -229,11 +231,12 @@ export function clientsService() {
 
     async listAllSmall(query: ClientListQueryDTO) {
       try {
-        const { page, pageSize, search, branchId, groupId, regionId } = query;
+        const { page, pageSize, search, clientId, branchId, groupId, regionId } = query;
         const skip = (page - 1) * pageSize;
 
         const where = {
           isDeleted: false,
+          ...(clientId && { id: clientId }),
           ...(branchId && { branchId }),
           ...(groupId && { groupId }),
           ...(regionId && { regionId }),
