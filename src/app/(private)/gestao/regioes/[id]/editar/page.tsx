@@ -1,13 +1,17 @@
 import { notFound } from "next/navigation";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { RegionForm } from "@/components/forms/region-form";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface EditarRegiaoPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function EditarRegiaoPage({ params }: EditarRegiaoPageProps) {
+  if (!(await checkPagePermission("regions.edit"))) return <AccessDenied />;
+
   const { id } = await params;
   const result = await regionsService().getById(id);
 

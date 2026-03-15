@@ -1,11 +1,14 @@
 import { cookies } from "next/headers";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { DeliverymanForm } from "@/components/forms/deliveryman-form";
 import { cookieConst } from "@/constants/cookies";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 export default async function NovoEntregadorPage() {
+  if (!(await checkPagePermission("deliverymen.create"))) return <AccessDenied />;
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

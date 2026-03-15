@@ -1,9 +1,11 @@
 import dayjs from "dayjs";
 import { notFound } from "next/navigation";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { UserForm } from "@/components/forms/user-form";
 import { branchesService } from "@/modules/branches/branches-service";
 import { usersService } from "@/modules/users/users-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
 
@@ -12,6 +14,8 @@ interface EditarColaboradorPageProps {
 }
 
 export default async function EditarColaboradorPage({ params }: EditarColaboradorPageProps) {
+  if (!(await checkPagePermission("users.edit"))) return <AccessDenied />;
+
   const { id } = await params;
 
   const [userResult, branchesResult] = await Promise.all([

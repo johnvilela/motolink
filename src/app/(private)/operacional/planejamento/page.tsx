@@ -3,6 +3,7 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import { AlertCircleIcon } from "lucide-react";
 import { cookies } from "next/headers";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { PlanningWeekView } from "@/components/composite/planning-week-view";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -11,6 +12,7 @@ import { normalizePlanningPeriod, type PlanningPeriod } from "@/constants/planni
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { planningService } from "@/modules/planning/planning-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 dayjs.extend(isoWeek);
 
@@ -23,6 +25,8 @@ interface PlanejamentoPageProps {
 }
 
 export default async function PlanejamentoPage({ searchParams }: PlanejamentoPageProps) {
+  if (!(await checkPagePermission("operational.view"))) return <AccessDenied />;
+
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

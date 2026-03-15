@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { DeliverymanForm } from "@/components/forms/deliveryman-form";
 import { cookieConst } from "@/constants/cookies";
 import { deliverymenService } from "@/modules/deliverymen/deliverymen-service";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
 
@@ -14,6 +16,8 @@ interface EditarEntregadorPageProps {
 }
 
 export default async function EditarEntregadorPage({ params }: EditarEntregadorPageProps) {
+  if (!(await checkPagePermission("deliverymen.edit"))) return <AccessDenied />;
+
   const { id } = await params;
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;

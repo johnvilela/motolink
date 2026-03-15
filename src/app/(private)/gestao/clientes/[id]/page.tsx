@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { Badge } from "@/components/ui/badge";
 import { Heading } from "@/components/ui/heading";
@@ -10,6 +11,7 @@ import { PAYMENT_TYPES, PERIOD_TYPES } from "@/constants/commercial-conditions";
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 import { applyCepMask } from "@/utils/masks/cep-mask";
 import { applyCnpjMask } from "@/utils/masks/cnpj-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
@@ -54,6 +56,8 @@ function getPeriodLabel(value: string) {
 }
 
 export default async function ClientePage({ params }: ClientePageProps) {
+  if (!(await checkPagePermission("clients.view"))) return <AccessDenied />;
+
   const { id } = await params;
 
   const [clientResult, regionsResult, groupsResult] = await Promise.all([

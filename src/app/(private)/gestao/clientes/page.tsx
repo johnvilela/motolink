@@ -1,7 +1,7 @@
 import { AlertCircleIcon } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
-
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { TablePagination } from "@/components/composite/table-pagination";
 import { TextSearch } from "@/components/composite/text-search";
@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
 import { clientsService } from "@/modules/clients/clients-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface ClientesPageProps {
   searchParams: Promise<{
@@ -20,6 +21,8 @@ interface ClientesPageProps {
 }
 
 export default async function ClientesPage({ searchParams }: ClientesPageProps) {
+  if (!(await checkPagePermission("clients.view"))) return <AccessDenied />;
+
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

@@ -1,12 +1,14 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { ClientForm } from "@/components/forms/client-form";
 import { cookieConst } from "@/constants/cookies";
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 import { applyCepMask } from "@/utils/masks/cep-mask";
 import { applyCnpjMask } from "@/utils/masks/cnpj-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
@@ -16,6 +18,8 @@ interface EditarClientePageProps {
 }
 
 export default async function EditarClientePage({ params }: EditarClientePageProps) {
+  if (!(await checkPagePermission("clients.edit"))) return <AccessDenied />;
+
   const { id } = await params;
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;

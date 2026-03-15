@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { DeliverymanDetailActions } from "@/components/composite/deliveryman-detail-actions";
 import { StatusBadge } from "@/components/composite/status-badge";
@@ -10,6 +11,7 @@ import { ContractTypeOptions } from "@/constants/contract-type";
 import { statusConst } from "@/constants/status";
 import { deliverymenService } from "@/modules/deliverymen/deliverymen-service";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 import { applyCpfMask } from "@/utils/masks/cpf-mask";
 import { applyPhoneMask } from "@/utils/masks/phone-mask";
 
@@ -51,6 +53,8 @@ function getFileLabel(fileUrl: string, index: number) {
 }
 
 export default async function EntregadorPage({ params }: EntregadorPageProps) {
+  if (!(await checkPagePermission("deliverymen.view"))) return <AccessDenied />;
+
   const { id } = await params;
 
   const [deliverymanResult, regionsResult] = await Promise.all([

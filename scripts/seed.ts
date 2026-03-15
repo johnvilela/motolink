@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { ROLE_PERMISSIONS } from "@/constants/permissions";
 import { hash } from "@/lib/hash";
 import { PrismaClient } from "../generated/prisma/client";
 
@@ -833,6 +834,8 @@ async function upsertUser(params: {
   document?: string;
   birthDate?: string;
 }) {
+  const permissions = ROLE_PERMISSIONS.find((rp) => rp.role === params.role)?.permissions ?? [];
+
   const user = await db.user.upsert({
     where: { email: params.email },
     update: {
@@ -841,6 +844,7 @@ async function upsertUser(params: {
       role: params.role,
       status: params.status,
       branches: params.branches,
+      permissions,
       phone: params.phone ?? null,
       document: params.document ?? null,
       birthDate: params.birthDate ? new Date(params.birthDate) : null,
@@ -852,6 +856,7 @@ async function upsertUser(params: {
       role: params.role,
       status: params.status,
       branches: params.branches,
+      permissions,
       phone: params.phone ?? null,
       document: params.document ?? null,
       birthDate: params.birthDate ? new Date(params.birthDate) : null,

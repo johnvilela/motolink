@@ -1,8 +1,10 @@
 import dayjs from "dayjs";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { MonitoringDailyContent } from "@/components/composite/monitoring-daily-content";
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface MonitoramentoDiarioPageProps {
   searchParams: Promise<{
@@ -13,6 +15,8 @@ interface MonitoramentoDiarioPageProps {
 }
 
 export default async function MonitoramentoDiarioPage({ searchParams }: MonitoramentoDiarioPageProps) {
+  if (!(await checkPagePermission("operational.view"))) return <AccessDenied />;
+
   const params = await searchParams;
   const selectedGroupId = params.group || undefined;
   const selectedClientId = params.client || undefined;

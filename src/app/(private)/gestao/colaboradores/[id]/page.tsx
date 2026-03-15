@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { StatusBadge } from "@/components/composite/status-badge";
 import { UserDetailActions } from "@/components/composite/user-detail-actions";
@@ -10,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { branchesService } from "@/modules/branches/branches-service";
 import { usersService } from "@/modules/users/users-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface ColaboradorPageProps {
   params: Promise<{ id: string }>;
@@ -53,6 +55,8 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 }
 
 export default async function ColaboradorPage({ params }: ColaboradorPageProps) {
+  if (!(await checkPagePermission("users.view"))) return <AccessDenied />;
+
   const { id } = await params;
   const result = await usersService().getById(id);
 

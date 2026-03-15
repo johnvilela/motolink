@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface RegiaoPageProps {
   params: Promise<{ id: string }>;
@@ -32,6 +34,8 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 }
 
 export default async function RegiaoPage({ params }: RegiaoPageProps) {
+  if (!(await checkPagePermission("regions.view"))) return <AccessDenied />;
+
   const { id } = await params;
   const result = await regionsService().getById(id);
 

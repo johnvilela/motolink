@@ -1,13 +1,17 @@
 import { notFound } from "next/navigation";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { GroupForm } from "@/components/forms/group-form";
 import { groupsService } from "@/modules/groups/groups-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface EditarGrupoPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function EditarGrupoPage({ params }: EditarGrupoPageProps) {
+  if (!(await checkPagePermission("groups.edit"))) return <AccessDenied />;
+
   const { id } = await params;
   const result = await groupsService().getById(id);
 

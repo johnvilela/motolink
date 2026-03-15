@@ -1,6 +1,7 @@
 import { AlertCircleIcon } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { TablePagination } from "@/components/composite/table-pagination";
 import { TextSearch } from "@/components/composite/text-search";
@@ -9,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
 import { groupsService } from "@/modules/groups/groups-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 interface GruposPageProps {
   searchParams: Promise<{
@@ -19,6 +21,8 @@ interface GruposPageProps {
 }
 
 export default async function GruposPage({ searchParams }: GruposPageProps) {
+  if (!(await checkPagePermission("groups.view"))) return <AccessDenied />;
+
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

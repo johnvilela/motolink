@@ -17,6 +17,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { navigationItems } from "@/constants/navigation-items";
+import { hasPermission } from "@/utils/has-permission";
 import { AppLayoutBranchSelector } from "./app-layout-branch-selector";
 
 interface Branch {
@@ -28,9 +29,10 @@ interface Branch {
 interface AppLayoutSidebarProps {
   branches: Branch[];
   selectedBranch: Branch;
+  user: { role: string; permissions: string[] };
 }
 
-export function AppLayoutSidebar({ branches, selectedBranch }: AppLayoutSidebarProps) {
+export function AppLayoutSidebar({ branches, selectedBranch, user }: AppLayoutSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -61,8 +63,13 @@ export function AppLayoutSidebar({ branches, selectedBranch }: AppLayoutSidebarP
 
               if (!("items" in item) || !item.items) return null;
 
-              const { items } = item;
-              const isGroupActive = items.some((subItem) => pathname === subItem.url);
+              const visibleItems = item.items.filter(
+                (subItem) => !subItem.requiredPermission || hasPermission(user, subItem.requiredPermission),
+              );
+
+              if (visibleItems.length === 0) return null;
+
+              const isGroupActive = visibleItems.some((subItem) => pathname === subItem.url);
 
               return (
                 <Collapsible key={item.title} defaultOpen={false} className="group/collapsible">
@@ -76,7 +83,7 @@ export function AppLayoutSidebar({ branches, selectedBranch }: AppLayoutSidebarP
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {items.map((subItem) => (
+                        {visibleItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
                               <Link href={subItem.url}>

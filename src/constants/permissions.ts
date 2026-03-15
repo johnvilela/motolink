@@ -20,6 +20,10 @@ export const ROLE_PERMISSIONS = [
       "regions.create",
       "regions.edit",
       "regions.delete",
+      "clients.view",
+      "clients.create",
+      "clients.edit",
+      "clients.delete",
       "deliverymen.view",
       "deliverymen.create",
       "deliverymen.edit",
@@ -32,6 +36,7 @@ export const ROLE_PERMISSIONS = [
 export const PERMISSION_MODULES = [
   { key: "users", label: "Colaboradores" },
   { key: "branches", label: "Filiais" },
+  { key: "clients", label: "Clientes" },
   { key: "groups", label: "Grupos" },
   { key: "regions", label: "Regioes" },
   { key: "deliverymen", label: "Entregadores" },

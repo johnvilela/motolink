@@ -1,12 +1,15 @@
 import { cookies } from "next/headers";
 
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { ClientForm } from "@/components/forms/client-form";
 import { cookieConst } from "@/constants/cookies";
 import { groupsService } from "@/modules/groups/groups-service";
 import { regionsService } from "@/modules/regions/regions-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 export default async function NovoClientePage() {
+  if (!(await checkPagePermission("clients.create"))) return <AccessDenied />;
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

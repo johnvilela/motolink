@@ -1,6 +1,7 @@
 import { AlertCircleIcon } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { SelectSearch } from "@/components/composite/select-search";
 import { TablePagination } from "@/components/composite/table-pagination";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
 import { statusConst } from "@/constants/status";
 import { usersService } from "@/modules/users/users-service";
+import { checkPagePermission } from "@/utils/check-page-permission";
 
 const statusOptions = [
   { value: statusConst.ACTIVE, label: "Ativo" },
@@ -29,6 +31,8 @@ interface ColaboradoresPageProps {
 }
 
 export default async function ColaboradoresPage({ searchParams }: ColaboradoresPageProps) {
+  if (!(await checkPagePermission("users.view"))) return <AccessDenied />;
+
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
 

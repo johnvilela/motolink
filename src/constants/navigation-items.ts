@@ -5,6 +5,7 @@ export const navigationItems = [
     title: "Dashboard",
     icon: Home,
     url: "/dashboard",
+    requiredPermission: null,
   },
   {
     title: "Operacional",
@@ -13,17 +14,17 @@ export const navigationItems = [
       {
         title: "Planejamento",
         url: "/operacional/planejamento",
-        requiredPermission: [],
+        requiredPermission: "operational.view",
       },
       {
         title: "Monitoramento Diario",
         url: "/operacional/monitoramento/diario",
-        requiredPermission: [],
+        requiredPermission: "operational.view",
       },
       {
         title: "Monitoramento Semanal",
         url: "/operacional/monitoramento/semanal",
-        requiredPermission: [],
+        requiredPermission: "operational.view",
       },
     ],
   },
@@ -34,27 +35,27 @@ export const navigationItems = [
       {
         title: "Clientes",
         url: "/gestao/clientes",
-        requiredPermission: [],
+        requiredPermission: "clients.view",
       },
       {
         title: "Entregadores",
         url: "/gestao/entregadores",
-        requiredPermission: [],
+        requiredPermission: "deliverymen.view",
       },
       {
         title: "Grupos",
         url: "/gestao/grupos",
-        requiredPermission: [],
+        requiredPermission: "groups.view",
       },
       {
         title: "Regiões",
         url: "/gestao/regioes",
-        requiredPermission: [],
+        requiredPermission: "regions.view",
       },
       {
         title: "Colaboradores",
         url: "/gestao/colaboradores",
-        requiredPermission: [],
+        requiredPermission: "users.view",
       },
     ],
   },

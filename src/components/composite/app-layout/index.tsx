@@ -39,7 +39,11 @@ export async function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppLayoutSidebar branches={userBranches} selectedBranch={selectedBranch} />
+      <AppLayoutSidebar
+        branches={userBranches}
+        selectedBranch={selectedBranch}
+        user={{ role: user.role, permissions: user.permissions }}
+      />
       <SidebarInset>
         <AppLayoutNavbar
           user={{ name: user.name, email: user.email }}
