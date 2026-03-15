@@ -202,6 +202,47 @@ export function usersService() {
       }
     },
 
+    async setPassword(token: string, userId: string, password: string) {
+      try {
+        const verificationToken = await db.verificationToken.findFirst({
+          where: {
+            token,
+            userId,
+            expiresAt: { gt: new Date() },
+          },
+        });
+
+        if (!verificationToken) {
+          return errAsync({
+            reason: "Token inválido ou expirado",
+            statusCode: 400,
+          });
+        }
+
+        const hashedPassword = await hash().create(password);
+
+        await db.user.update({
+          where: { id: userId },
+          data: {
+            password: hashedPassword,
+            status: statusConst.ACTIVE,
+          },
+        });
+
+        await db.verificationToken.delete({
+          where: { id: verificationToken.id },
+        });
+
+        return okAsync({ success: true });
+      } catch (error) {
+        console.error("Error setting user password:", error);
+        return errAsync({
+          reason: "Não foi possível definir a senha",
+          statusCode: 500,
+        });
+      }
+    },
+
     async delete(id: string, loggedUserId: string) {
       try {
         const existingUser = await db.user.findUnique({

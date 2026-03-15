@@ -36,3 +36,30 @@ export const userListQuerySchema = z.object({
 });
 
 export type UserListQueryDTO = z.infer<typeof userListQuerySchema>;
+
+export const newPasswordFormSchema = z
+  .object({
+    token: z.string().min(1, "Token é obrigatório"),
+    userId: z.string().min(1, "ID do usuário é obrigatório"),
+    password: z.string().min(8, { message: "A senha deve ter no mínimo 8 caracteres" }).regex(passwordRegex, {
+      message:
+        "A senha deve conter ao menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial",
+    }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+export type NewPasswordFormSchema = z.infer<typeof newPasswordFormSchema>;
+
+export const newPasswordSchema = z.object({
+  token: z.string().min(1, "Token é obrigatório"),
+  userId: z.string().min(1, "ID do usuário é obrigatório"),
+  password: z.string().min(8, { message: "A senha deve ter no mínimo 8 caracteres" }).regex(passwordRegex, {
+    message: "A senha deve conter ao menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial",
+  }),
+});
+
+export type NewPasswordDTO = z.infer<typeof newPasswordSchema>;

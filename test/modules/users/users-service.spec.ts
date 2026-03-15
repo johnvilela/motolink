@@ -214,6 +214,77 @@ describe("Users Service", () => {
     });
   });
 
+  describe(".setPassword", () => {
+    it("should set password, activate user, and delete token", async () => {
+      const user = await createTestUser({ status: "PENDING" });
+      const token = crypto.randomUUID();
+      await db.verificationToken.create({
+        data: {
+          token,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+      });
+
+      const result = await service.setPassword(token, user.id, "NewPass@1234");
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap()).toEqual({ success: true });
+
+      const dbUser = await db.user.findUnique({ where: { id: user.id } });
+      // biome-ignore lint/style/noNonNullAssertion: Test assertion
+      expect(dbUser!.status).toBe("ACTIVE");
+      // biome-ignore lint/style/noNonNullAssertion: Test assertion
+      expect(dbUser!.password).toMatch(/^\$argon2/);
+
+      const dbToken = await db.verificationToken.findFirst({ where: { userId: user.id } });
+      expect(dbToken).toBeNull();
+    });
+
+    it("should return 400 when token is invalid", async () => {
+      const user = await createTestUser({ status: "PENDING" });
+
+      const result = await service.setPassword("invalid-token", user.id, "NewPass@1234");
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().statusCode).toBe(400);
+    });
+
+    it("should return 400 when token is expired", async () => {
+      const user = await createTestUser({ status: "PENDING" });
+      const token = crypto.randomUUID();
+      await db.verificationToken.create({
+        data: {
+          token,
+          userId: user.id,
+          expiresAt: new Date(Date.now() - 60_000),
+        },
+      });
+
+      const result = await service.setPassword(token, user.id, "NewPass@1234");
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().statusCode).toBe(400);
+    });
+
+    it("should return 400 when userId does not match the token", async () => {
+      const user = await createTestUser({ status: "PENDING" });
+      const token = crypto.randomUUID();
+      await db.verificationToken.create({
+        data: {
+          token,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+      });
+
+      const result = await service.setPassword(token, crypto.randomUUID(), "NewPass@1234");
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().statusCode).toBe(400);
+    });
+  });
+
   describe(".delete", () => {
     it("should soft-delete the user", async () => {
       const created = await createTestUser();

@@ -9,7 +9,7 @@ import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
 import { cleanMask } from "@/utils/masks/clean-mask";
 import { usersService } from "./users-service";
-import { userMutateSchema } from "./users-types";
+import { newPasswordSchema, userMutateSchema } from "./users-types";
 
 dayjs.extend(customParseFormat);
 
@@ -52,6 +52,16 @@ export const mutateUserAction = safeAction.inputSchema(userMutateSchema).action(
   }
 
   revalidatePath("/gestao/colaboradores");
+  return { success: true };
+});
+
+export const newPasswordAction = safeAction.inputSchema(newPasswordSchema).action(async ({ parsedInput }) => {
+  const result = await usersService().setPassword(parsedInput.token, parsedInput.userId, parsedInput.password);
+
+  if (result.isErr()) {
+    return { error: result.error.reason };
+  }
+
   return { success: true };
 });
 

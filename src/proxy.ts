@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { cookieConst } from "./constants/cookies";
 import { sessionsService } from "./modules/sessions/sessions-service";
 
-const publicPaths = ["/login"];
+const publicPaths = ["/login", "/trocar-senha"];
 
 function clearSessionCookies(cookieStore: ReadonlyRequestCookies) {
   cookieStore.delete(cookieConst.SESSION_TOKEN);
