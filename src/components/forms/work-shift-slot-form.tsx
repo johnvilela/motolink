@@ -33,6 +33,7 @@ import { ContractTypeOptions, contractTypeConst } from "@/constants/contract-typ
 import { PlanningPeriodOptions } from "@/constants/planning-period";
 import { mutateWorkShiftSlotAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { applyMoneyMask, formatMoneyDisplay } from "@/utils/masks/money-mask";
+import { applyTimeMask } from "@/utils/masks/time-mask";
 
 interface CommercialCondition {
   bagsStatus?: string;
@@ -275,6 +276,7 @@ export function WorkShiftSlotForm({
   const watchedPaymentForm = watch("paymentForm");
   const watchedIsWeekendRate = watch("isWeekendRate");
   const watchedPaymentType = watch("deliverymanPaymentType");
+  const watchedAdditionalTax = toNum(watch("additionalTax") as number | undefined);
 
   const { execute, isExecuting } = useAction(mutateWorkShiftSlotAction, {
     onSuccess: ({ data }) => {
@@ -334,9 +336,13 @@ export function WorkShiftSlotForm({
         }
       } else if (watchedPaymentForm === "GUARANTEED") {
         if (isDaytime) {
-          total += toNum(isWknd ? cc.guaranteedDayWeekendTax : cc.guaranteedDayTax);
+          const qty = toNum(isWknd ? cc.guaranteedDayWeekend : cc.guaranteedDay);
+          const tax = toNum(isWknd ? cc.guaranteedDayWeekendTax : cc.guaranteedDayTax);
+          total += qty * tax;
         } else {
-          total += toNum(isWknd ? cc.guaranteedNightWeekendTax : cc.guaranteedNightTax);
+          const qty = toNum(isWknd ? cc.guaranteedNightWeekend : cc.guaranteedNight);
+          const tax = toNum(isWknd ? cc.guaranteedNightWeekendTax : cc.guaranteedNightTax);
+          total += qty * tax;
         }
       }
     }
@@ -572,12 +578,36 @@ export function WorkShiftSlotForm({
       <div className="grid grid-cols-2 gap-3">
         <Field data-invalid={!!errors.startTime}>
           <FieldLabel htmlFor="startTime">Hora início</FieldLabel>
-          <Input id="startTime" type="time" {...register("startTime")} />
+          <Controller
+            name="startTime"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="startTime"
+                placeholder="HH:MM"
+                maxLength={5}
+                value={field.value}
+                onChange={(e) => field.onChange(applyTimeMask(e.target.value))}
+              />
+            )}
+          />
           <FieldError errors={[errors.startTime]} />
         </Field>
         <Field data-invalid={!!errors.endTime}>
           <FieldLabel htmlFor="endTime">Hora término</FieldLabel>
-          <Input id="endTime" type="time" {...register("endTime")} />
+          <Controller
+            name="endTime"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="endTime"
+                placeholder="HH:MM"
+                maxLength={5}
+                value={field.value}
+                onChange={(e) => field.onChange(applyTimeMask(e.target.value))}
+              />
+            )}
+          />
           <FieldError errors={[errors.endTime]} />
         </Field>
       </div>
@@ -630,30 +660,6 @@ export function WorkShiftSlotForm({
         <FieldError errors={[errors.paymentForm]} />
       </Field>
 
-      {/* Calculated value */}
-      {watchedPaymentForm && watchedPeriod.length > 0 && (
-        <div className="rounded-lg border bg-muted/50 p-3">
-          <p className="text-xs font-medium text-muted-foreground">Valor calculado</p>
-          <p className="text-lg font-semibold">{formatMoneyDisplay(calculatedValue)}</p>
-          {watchedPaymentForm === "GUARANTEED" && (
-            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-              {watchedPeriod.map((period) => {
-                const isDaytime = period.toUpperCase() === "DAYTIME";
-                const qty = isDaytime
-                  ? toNum(watchedIsWeekendRate ? cc?.guaranteedDayWeekend : cc?.guaranteedDay)
-                  : toNum(watchedIsWeekendRate ? cc?.guaranteedNightWeekend : cc?.guaranteedNight);
-                const label = isDaytime ? "Diurno" : "Noturno";
-                return (
-                  <p key={period}>
-                    {label}: {qty} entregas garantidas
-                  </p>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Additional tax */}
       <Field>
         <FieldLabel>Taxa adicional</FieldLabel>
@@ -675,6 +681,59 @@ export function WorkShiftSlotForm({
         <FieldLabel htmlFor="additionalTaxReason">Motivo da taxa adicional</FieldLabel>
         <Textarea id="additionalTaxReason" placeholder="Descreva o motivo..." {...register("additionalTaxReason")} />
       </Field>
+
+      {/* Payment summary */}
+      {watchedPaymentForm && watchedPeriod.length > 0 && (
+        <div className="rounded-lg border bg-muted/50 p-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Resumo do pagamento</p>
+          <div className="space-y-1 text-sm">
+            {watchedPeriod.map((period) => {
+              const isDaytime = period.toUpperCase() === "DAYTIME";
+              const label = isDaytime ? "Diurno" : "Noturno";
+
+              if (watchedPaymentForm === "DAILY") {
+                const rate = isDaytime
+                  ? toNum(watchedIsWeekendRate ? cc?.deliverymanDailyDayWknd : cc?.deliverymanDailyDay)
+                  : toNum(watchedIsWeekendRate ? cc?.deliverymanDailyNightWknd : cc?.deliverymanDailyNight);
+                return (
+                  <div key={period} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span>{formatMoneyDisplay(rate)}</span>
+                  </div>
+                );
+              }
+
+              const qty = isDaytime
+                ? toNum(watchedIsWeekendRate ? cc?.guaranteedDayWeekend : cc?.guaranteedDay)
+                : toNum(watchedIsWeekendRate ? cc?.guaranteedNightWeekend : cc?.guaranteedNight);
+              const tax = isDaytime
+                ? toNum(watchedIsWeekendRate ? cc?.guaranteedDayWeekendTax : cc?.guaranteedDayTax)
+                : toNum(watchedIsWeekendRate ? cc?.guaranteedNightWeekendTax : cc?.guaranteedNightTax);
+              const subtotal = qty * tax;
+              return (
+                <div key={period} className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    {label}: {qty} x {formatMoneyDisplay(tax)}
+                  </span>
+                  <span>{formatMoneyDisplay(subtotal)}</span>
+                </div>
+              );
+            })}
+            {watchedAdditionalTax > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxa adicional</span>
+                <span>{formatMoneyDisplay(watchedAdditionalTax)}</span>
+              </div>
+            )}
+            <div className="border-t pt-1">
+              <div className="flex justify-between font-semibold">
+                <span>Total</span>
+                <span>{formatMoneyDisplay(calculatedValue + watchedAdditionalTax)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {serverError && (
         <Alert variant="destructive">

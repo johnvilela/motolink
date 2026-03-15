@@ -80,6 +80,7 @@ interface WorkShiftSlot {
   checkInAt?: string | null;
   checkOutAt?: string | null;
   deliverymenPaymentValue: string;
+  totalValueToPay?: number | string;
   deliveryman?: { id: string; name: string } | null;
 }
 
@@ -94,6 +95,7 @@ interface MonitoringClientCardProps {
   plannings: PlanningRecord[];
   workShiftSlots: WorkShiftSlot[];
   shiftDate: string;
+  onRefresh?: () => void;
 }
 
 function isNonEmpty(val: unknown): boolean {
@@ -104,7 +106,13 @@ function isNonEmpty(val: unknown): boolean {
   return Boolean(val);
 }
 
-export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftDate }: MonitoringClientCardProps) {
+export function MonitoringClientCard({
+  client,
+  plannings,
+  workShiftSlots,
+  shiftDate,
+  onRefresh,
+}: MonitoringClientCardProps) {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const cc = client.commercialCondition;
 
@@ -153,6 +161,15 @@ export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftD
 
   const periods: PlanningPeriod[] = [planningPeriodConst.DAYTIME, planningPeriodConst.NIGHTTIME];
 
+  const periodSummaries = periods
+    .map((period) => {
+      const planning = plannings.find((p) => p.period === period);
+      const plannedCount = planning?.plannedCount ?? 0;
+      const filledCount = workShiftSlots.filter((s) => s.period.some((p) => p.toUpperCase() === period)).length;
+      return { period, plannedCount, filledCount };
+    })
+    .filter((s) => s.plannedCount > 0 || s.filledCount > 0);
+
   const renderPeriodRows = (period: PlanningPeriod) => {
     const planning = plannings.find((p) => p.period === period);
     const plannedCount = planning?.plannedCount ?? 0;
@@ -170,6 +187,7 @@ export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftD
           period={period}
           client={client}
           shiftDate={shiftDate}
+          onRefresh={onRefresh}
         />,
       );
     }
@@ -183,6 +201,7 @@ export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftD
           period={period}
           client={client}
           shiftDate={shiftDate}
+          onRefresh={onRefresh}
         />,
       );
     }
@@ -196,9 +215,33 @@ export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftD
     <>
       <Card size="sm">
         <CardHeader>
-          <div className="min-w-0">
-            <CardTitle>{client.name}</CardTitle>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{address}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle>{client.name}</CardTitle>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{address}</p>
+            </div>
+            {periodSummaries.length > 0 && (
+              <div className="flex shrink-0 items-center gap-2">
+                {periodSummaries.map((s) => {
+                  const isDaytime = s.period === planningPeriodConst.DAYTIME;
+                  const Icon = isDaytime ? SunIcon : MoonIcon;
+                  const label = s.plannedCount > 0 ? `${s.filledCount}/${s.plannedCount}` : `${s.filledCount}`;
+                  return (
+                    <span
+                      key={s.period}
+                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${
+                        isDaytime
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-indigo-200 bg-indigo-50 text-indigo-700"
+                      }`}
+                    >
+                      <Icon className="size-3.5" />
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
           {conditions.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -236,7 +279,14 @@ export function MonitoringClientCard({ client, plannings, workShiftSlots, shiftD
             <SheetTitle>Adicionar entregador</SheetTitle>
           </SheetHeader>
           <div className="px-4 pb-4">
-            <WorkShiftSlotForm client={client} shiftDate={shiftDate} onSuccess={() => setAddSheetOpen(false)} />
+            <WorkShiftSlotForm
+              client={client}
+              shiftDate={shiftDate}
+              onSuccess={() => {
+                setAddSheetOpen(false);
+                onRefresh?.();
+              }}
+            />
           </div>
         </SheetContent>
       </Sheet>

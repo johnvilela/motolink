@@ -14,9 +14,16 @@ interface MonitoringPlanningRowProps {
   period: PlanningPeriod;
   client: FormClient;
   shiftDate: string;
+  onRefresh?: () => void;
 }
 
-export function MonitoringPlanningRow({ periodLabel, period, client, shiftDate }: MonitoringPlanningRowProps) {
+export function MonitoringPlanningRow({
+  periodLabel,
+  period,
+  client,
+  shiftDate,
+  onRefresh,
+}: MonitoringPlanningRowProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
@@ -45,7 +52,10 @@ export function MonitoringPlanningRow({ periodLabel, period, client, shiftDate }
               client={client}
               shiftDate={shiftDate}
               defaultPeriod={period}
-              onSuccess={() => setSheetOpen(false)}
+              onSuccess={() => {
+                setSheetOpen(false);
+                onRefresh?.();
+              }}
             />
           </div>
         </SheetContent>

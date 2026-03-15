@@ -172,6 +172,34 @@ export function MonitoringDailyContent({
     setCalendarOpen(false);
   };
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const fetchMonitoringData = useCallback(async () => {
+    if (!selectedGroupId && !selectedClientId) return;
+
+    try {
+      const url = new URL("/api/monitoring", window.location.origin);
+      url.searchParams.set("targetDate", dateStr);
+      if (selectedGroupId) url.searchParams.set("groupId", selectedGroupId);
+      if (selectedClientId) url.searchParams.set("clientId", selectedClientId);
+
+      const res = await fetch(url.toString(), { signal: abortControllerRef.current?.signal });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        setErrorMessage(json?.error ?? "Não foi possível buscar os dados de monitoramento");
+        return;
+      }
+
+      const json = await res.json();
+      setClients(Array.isArray(json.clients) ? json.clients : []);
+      setErrorMessage(null);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      console.error("Error fetching clients:", error);
+      setErrorMessage("Não foi possível buscar os dados de monitoramento");
+    }
+  }, [selectedGroupId, selectedClientId, dateStr]);
+
   useEffect(() => {
     if (!selectedGroupId && !selectedClientId) {
       setClients([]);
@@ -180,49 +208,27 @@ export function MonitoringDailyContent({
     }
 
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     let pollTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    const fetchData = async () => {
-      try {
-        const url = new URL("/api/monitoring", window.location.origin);
-        url.searchParams.set("targetDate", dateStr);
-        if (selectedGroupId) url.searchParams.set("groupId", selectedGroupId);
-        if (selectedClientId) url.searchParams.set("clientId", selectedClientId);
-
-        const res = await fetch(url.toString(), { signal: controller.signal });
-        if (!res.ok) {
-          const json = (await res.json().catch(() => null)) as { error?: string } | null;
-          setErrorMessage(json?.error ?? "Não foi possível buscar os dados de monitoramento");
-          return;
-        }
-
-        const json = await res.json();
-        setClients(Array.isArray(json.clients) ? json.clients : []);
-        setErrorMessage(null);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        console.error("Error fetching clients:", error);
-        setErrorMessage("Não foi possível buscar os dados de monitoramento");
-      }
-    };
 
     const scheduleNextPoll = () => {
       const jitterMs = 1_000 + Math.random() * 3_000;
       pollTimeout = setTimeout(async () => {
         if (controller.signal.aborted) return;
-        await fetchData();
+        await fetchMonitoringData();
         scheduleNextPoll();
       }, 30_000 + jitterMs);
     };
 
-    fetchData();
+    fetchMonitoringData();
     scheduleNextPoll();
 
     return () => {
       controller.abort();
+      abortControllerRef.current = null;
       if (pollTimeout) clearTimeout(pollTimeout);
     };
-  }, [selectedGroupId, selectedClientId, dateStr]);
+  }, [selectedGroupId, selectedClientId, fetchMonitoringData]);
 
   const resolvedSelectedGroupName =
     groups.options.find((option) => option.value === selectedGroupId)?.label ?? selectedGroupName;
@@ -349,6 +355,7 @@ export function MonitoringDailyContent({
                 }))}
                 workShiftSlots={client.workShifts}
                 shiftDate={dateStr}
+                onRefresh={fetchMonitoringData}
               />
             );
           })}

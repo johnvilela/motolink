@@ -7,14 +7,28 @@ import { convertDecimals } from "@/utils/convert-decimals";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import type { WorkShiftSlotListQueryDTO, WorkShiftSlotMutateDTO } from "./work-shift-slots-types";
 
+function calculateTotalValueToPay(body: WorkShiftSlotMutateDTO): number {
+  const { paymentForm, additionalTax } = body;
+
+  if (paymentForm === "GUARANTEED") {
+    return (
+      body.guaranteedQuantityDay * body.deliverymanPerDeliveryDay +
+      body.guaranteedQuantityNight * body.deliverymanPerDeliveryNight +
+      additionalTax
+    );
+  }
+
+  return body.deliverymanAmountDay + body.deliverymanAmountNight + additionalTax;
+}
+
 function toWorkShiftSlotCreateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedCreateInput {
   const { isFreelancer: _isFreelancer, ...data } = body;
-  return data;
+  return { ...data, totalValueToPay: calculateTotalValueToPay(body) };
 }
 
 function toWorkShiftSlotUpdateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedUpdateInput {
   const { isFreelancer: _isFreelancer, ...data } = body;
-  return data;
+  return { ...data, totalValueToPay: calculateTotalValueToPay(body) };
 }
 
 export function workShiftSlotsService() {
@@ -229,6 +243,7 @@ export function workShiftSlotsService() {
               deliverymanPerDeliveryDay: slot.deliverymanPerDeliveryDay,
               deliverymanPerDeliveryNight: slot.deliverymanPerDeliveryNight,
               isWeekendRate: slot.isWeekendRate,
+              totalValueToPay: slot.totalValueToPay,
               status: slot.deliverymanId ? "INVITED" : "OPEN",
             };
 

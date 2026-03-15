@@ -1,3 +1,15 @@
+import {
+  CheckCircleIcon,
+  CheckIcon,
+  CircleDotIcon,
+  ClockIcon,
+  LogInIcon,
+  SendIcon,
+  UserXIcon,
+  XCircleIcon,
+  XIcon,
+} from "lucide-react";
+
 export const workShiftSlotStatusConst = {
   OPEN: "OPEN",
   INVITED: "INVITED",
@@ -42,8 +54,20 @@ export const WORK_SHIFT_SLOT_STATUS_COLORS: Record<WorkShiftSlotStatus, string> 
   CONFIRMED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   CHECKED_IN: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
   PENDING_COMPLETION: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
-  COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  ABSENT: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  COMPLETED: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+  ABSENT: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  CANCELLED: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
   REJECTED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+};
+
+export const WORK_SHIFT_SLOT_STATUS_ICONS: Record<WorkShiftSlotStatus, typeof CheckIcon> = {
+  OPEN: CircleDotIcon,
+  INVITED: SendIcon,
+  CONFIRMED: CheckIcon,
+  CHECKED_IN: LogInIcon,
+  PENDING_COMPLETION: ClockIcon,
+  COMPLETED: CheckCircleIcon,
+  ABSENT: UserXIcon,
+  CANCELLED: XCircleIcon,
+  REJECTED: XIcon,
 };
