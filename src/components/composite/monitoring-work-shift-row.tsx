@@ -11,12 +11,14 @@ import {
   PencilIcon,
   SendIcon,
   SunIcon,
+  TagIcon,
   Trash2Icon,
   UserXIcon,
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
+import { WorkShiftSlotDiscountForm } from "@/components/forms/work-shift-slot-discount-form";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
 import { WorkShiftSlotTimesForm } from "@/components/forms/work-shift-slot-times-form";
 import {
@@ -104,6 +106,7 @@ export function MonitoringWorkShiftRow({
   const [dialogType, setDialogType] = useState<string | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editTimesSheetOpen, setEditTimesSheetOpen] = useState(false);
+  const [addDiscountSheetOpen, setAddDiscountSheetOpen] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
   const [unansweredDialogOpen, setUnansweredDialogOpen] = useState(false);
@@ -293,6 +296,12 @@ export function MonitoringWorkShiftRow({
                     Editar horários
                   </DropdownMenuItem>
                 )}
+                {!isTerminal && (
+                  <DropdownMenuItem onClick={() => setAddDiscountSheetOpen(true)}>
+                    <TagIcon className="mr-2 size-4" />
+                    Adicionar desconto
+                  </DropdownMenuItem>
+                )}
                 {nextTransitions.includes("UNANSWERED" as WorkShiftSlotStatus) && (
                   <DropdownMenuItem className="text-gray-600" onClick={() => setUnansweredDialogOpen(true)}>
                     <MessageCircleOffIcon className="mr-2 size-4" />
@@ -419,9 +428,32 @@ export function MonitoringWorkShiftRow({
                 startTime: slot.startTime,
                 endTime: slot.endTime,
                 deliverymenPaymentValue: slot.deliverymenPaymentValue,
+                paymentForm: slot.paymentForm,
+                deliverymanPaymentType: slot.deliverymanPaymentType,
+                additionalTax: Number(slot.additionalTax) || 0,
+                additionalTaxReason: slot.additionalTaxReason,
+                isWeekendRate: slot.isWeekendRate,
               }}
               onSuccess={() => {
                 setEditSheetOpen(false);
+                onRefresh?.();
+              }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Add discount Sheet */}
+      <Sheet open={addDiscountSheetOpen} onOpenChange={setAddDiscountSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Adicionar desconto</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-4">
+            <WorkShiftSlotDiscountForm
+              slotId={slot.id}
+              onSuccess={() => {
+                setAddDiscountSheetOpen(false);
                 onRefresh?.();
               }}
             />

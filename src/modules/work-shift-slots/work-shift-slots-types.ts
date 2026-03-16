@@ -48,3 +48,22 @@ export const workShiftSlotUpdateTimesSchema = z.object({
 });
 
 export type WorkShiftSlotUpdateTimesDTO = z.infer<typeof workShiftSlotUpdateTimesSchema>;
+
+export const discountStatusConst = {
+  ACTIVE: "ACTIVE",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export const discountMutateSchema = z.object({
+  workShiftSlotId: z.string().uuid({ message: "ID do turno inválido" }),
+  amount: z.coerce.number().positive({ message: "Valor deve ser maior que zero" }),
+  reason: z.string().min(1, { message: "Motivo é obrigatório" }),
+});
+
+export type DiscountMutateDTO = z.infer<typeof discountMutateSchema>;
+
+export const discountCancelSchema = z.object({
+  id: z.string().uuid({ message: "ID do desconto inválido" }),
+});
+
+export type DiscountCancelDTO = z.infer<typeof discountCancelSchema>;

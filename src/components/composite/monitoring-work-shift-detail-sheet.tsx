@@ -1,7 +1,16 @@
 "use client";
 
 import dayjs from "dayjs";
-import { BanIcon, ClockIcon, MessageCircleOffIcon, PencilIcon, Trash2Icon, UserXIcon } from "lucide-react";
+import {
+  BanIcon,
+  ClockIcon,
+  MessageCircleOffIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  UserXIcon,
+  XIcon,
+} from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +29,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
@@ -34,7 +44,11 @@ import {
 } from "@/constants/work-shift-slot-status";
 import { cn } from "@/lib/cn";
 import { formatTraceChanges } from "@/modules/history-traces/history-traces-formatter";
-import { updateWorkShiftSlotStatusAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import {
+  cancelDiscountAction,
+  createDiscountAction,
+  updateWorkShiftSlotStatusAction,
+} from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 
 export interface DetailSheetSlot {
@@ -62,6 +76,14 @@ export interface DetailSheetSlot {
   additionalTax?: number | string;
   additionalTaxReason?: string;
   isWeekendRate?: boolean;
+  discounts?: {
+    id: string;
+    amount: number | string;
+    reason: string;
+    status: string;
+    createdByName: string;
+    createdAt: string;
+  }[];
 }
 
 type FormClient = Parameters<typeof WorkShiftSlotForm>[0]["client"];
@@ -122,7 +144,12 @@ export function MonitoringWorkShiftDetailSheet({
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [traces, setTraces] = useState<HistoryTrace[]>([]);
   const [tracesLoading, setTracesLoading] = useState(false);
+  const [discountFormOpen, setDiscountFormOpen] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
   const { executeAsync, isExecuting } = useAction(updateWorkShiftSlotStatusAction);
+  const { executeAsync: executeCreateDiscount, isExecuting: isCreatingDiscount } = useAction(createDiscountAction);
+  const { executeAsync: executeCancelDiscount } = useAction(cancelDiscountAction);
 
   useEffect(() => {
     if (!open) return;
@@ -190,6 +217,36 @@ export function MonitoringWorkShiftDetailSheet({
       onRefresh?.();
     }
   };
+
+  const handleCreateDiscount = async () => {
+    const amount = Number.parseFloat(discountAmount);
+    if (!amount || amount <= 0 || !discountReason.trim()) return;
+
+    const result = await executeCreateDiscount({ workShiftSlotId: slot.id, amount, reason: discountReason.trim() });
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+    } else {
+      toast.success("Desconto adicionado");
+      setDiscountAmount("");
+      setDiscountReason("");
+      setDiscountFormOpen(false);
+      onRefresh?.();
+    }
+  };
+
+  const handleCancelDiscount = async (discountId: string) => {
+    const result = await executeCancelDiscount({ id: discountId });
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+    } else {
+      toast.success("Desconto cancelado");
+      onRefresh?.();
+    }
+  };
+
+  const discounts = slot.discounts ?? [];
+  const activeDiscounts = discounts.filter((d) => d.status === "ACTIVE");
+  const totalDiscounts = activeDiscounts.reduce((sum, d) => sum + Number(d.amount), 0);
 
   type FormulaRow = {
     label: string;
@@ -346,6 +403,116 @@ export function MonitoringWorkShiftDetailSheet({
               </>
             )}
 
+            {/* Discounts section */}
+            <Separator />
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descontos</p>
+                {!discountFormOpen && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setDiscountFormOpen(true)}
+                  >
+                    <PlusIcon className="mr-1 size-3" />
+                    Adicionar
+                  </Button>
+                )}
+              </div>
+
+              {discountFormOpen && (
+                <div className="mb-3 space-y-2 rounded-md border p-3">
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="Valor (R$)"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Motivo do desconto"
+                    value={discountReason}
+                    onChange={(e) => setDiscountReason(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1" onClick={handleCreateDiscount} disabled={isCreatingDiscount}>
+                      {isCreatingDiscount ? <Spinner className="mr-1 size-3" /> : null}
+                      Salvar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDiscountFormOpen(false);
+                        setDiscountAmount("");
+                        setDiscountReason("");
+                      }}
+                    >
+                      <XIcon className="size-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {discounts.length > 0 ? (
+                <div className="space-y-2">
+                  {discounts.map((discount) => {
+                    const isCancelled = discount.status === "CANCELLED";
+                    return (
+                      <div
+                        key={discount.id}
+                        className={cn(
+                          "flex items-start justify-between rounded-md border p-2 text-sm",
+                          isCancelled && "opacity-50",
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={cn("font-medium tabular-nums", isCancelled && "line-through")}>
+                              {formatMoneyDisplay(discount.amount)}
+                            </span>
+                            {isCancelled && (
+                              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                Cancelado
+                              </Badge>
+                            )}
+                          </div>
+                          <p className={cn("text-xs text-muted-foreground", isCancelled && "line-through")}>
+                            {discount.reason}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/70">
+                            {discount.createdByName} - {dayjs(discount.createdAt).format("DD/MM HH:mm")}
+                          </p>
+                        </div>
+                        {!isCancelled && status !== "COMPLETED" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-xs text-destructive hover:text-destructive"
+                            onClick={() => handleCancelDiscount(discount.id)}
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {activeDiscounts.length > 0 && (
+                    <div className="flex items-center justify-between pt-1 text-sm">
+                      <span className="text-muted-foreground">Total descontos</span>
+                      <span className="font-semibold tabular-nums text-destructive">
+                        {formatMoneyDisplay(totalDiscounts)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum desconto registrado.</p>
+              )}
+            </div>
+
             {/* History traces section */}
             <Separator />
             <div>
@@ -473,6 +640,11 @@ export function MonitoringWorkShiftDetailSheet({
                 startTime: slot.startTime,
                 endTime: slot.endTime,
                 deliverymenPaymentValue: slot.deliverymenPaymentValue,
+                paymentForm: slot.paymentForm,
+                deliverymanPaymentType: slot.deliverymanPaymentType,
+                additionalTax: Number(slot.additionalTax) || 0,
+                additionalTaxReason: slot.additionalTaxReason,
+                isWeekendRate: slot.isWeekendRate,
               }}
               onSuccess={() => {
                 setEditSheetOpen(false);

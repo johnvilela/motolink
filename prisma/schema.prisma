@@ -247,6 +247,7 @@ model WorkShiftSlot {
   trackingConnected           Boolean          @default(false)
   trackingConnectedAt         DateTime?
   additionalTax               Decimal          @default(0) @db.Decimal(16, 2)
+  rainTax                     Decimal          @default(0) @db.Decimal(16, 2)
   additionalTaxReason         String?
   deliverymanAmountDay        Decimal          @default(0) @db.Decimal(16, 2)
   deliverymanAmountNight      Decimal          @default(0) @db.Decimal(16, 2)
@@ -265,6 +266,7 @@ model WorkShiftSlot {
   createdAt                   DateTime         @default(now())
   paymentRequests             PaymentRequest[]
   invites                     Invite[]
+  discounts                   Discount[]
 
   @@index([clientId, shiftDate])
   @@index([deliverymanId, shiftDate])
@@ -327,6 +329,22 @@ model Event {
   createdBy   User     @relation(fields: [createdById], references: [id])
 
   @@map("events")
+}
+
+model Discount {
+  id              String        @id @default(uuid(7))
+  workShiftSlotId String
+  workShiftSlot   WorkShiftSlot @relation(fields: [workShiftSlotId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(16, 2)
+  reason          String
+  status          String        @default("ACTIVE")
+  createdById     String
+  createdByName   String
+  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime      @default(now())
+
+  @@index([workShiftSlotId])
+  @@map("discounts")
 }
 
 model Planning {

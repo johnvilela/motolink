@@ -6,6 +6,7 @@ import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import type {
+  DiscountMutateDTO,
   WorkShiftSlotListQueryDTO,
   WorkShiftSlotMutateDTO,
   WorkShiftSlotUpdateTimesDTO,
@@ -100,6 +101,7 @@ export function workShiftSlotsService() {
           include: {
             client: { select: { id: true, name: true } },
             deliveryman: { select: { id: true, name: true } },
+            discounts: { orderBy: { createdAt: "desc" } },
           },
         });
 
@@ -180,7 +182,17 @@ export function workShiftSlotsService() {
           return errAsync({ reason: "Transição de status inválida", statusCode: 400 });
         }
 
-        const updated = await db.workShiftSlot.update({ where: { id }, data: { status }, include });
+        const data: Record<string, unknown> = { status };
+
+        if (status === "CHECKED_IN" && !existing.checkInAt) {
+          data.checkInAt = new Date();
+        }
+
+        if (status === "PENDING_COMPLETION" && !existing.checkOutAt) {
+          data.checkOutAt = new Date();
+        }
+
+        const updated = await db.workShiftSlot.update({ where: { id }, data, include });
 
         historyTracesService()
           .create({
@@ -352,6 +364,90 @@ export function workShiftSlotsService() {
       } catch (error) {
         console.error("Error deleting work shift slot:", error);
         return errAsync({ reason: "Não foi possível excluir o turno de trabalho", statusCode: 500 });
+      }
+    },
+
+    async createDiscount(body: DiscountMutateDTO, loggedUser: { id: string; name: string }) {
+      try {
+        const slot = await db.workShiftSlot.findUnique({ where: { id: body.workShiftSlotId } });
+
+        if (!slot) {
+          return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
+        }
+
+        const discount = await db.discount.create({
+          data: {
+            workShiftSlotId: body.workShiftSlotId,
+            amount: body.amount,
+            reason: body.reason,
+            createdById: loggedUser.id,
+            createdByName: loggedUser.name,
+          },
+        });
+
+        historyTracesService()
+          .create({
+            userId: loggedUser.id,
+            action: historyTraceActionConst.CREATED,
+            entityType: historyTraceEntityConst.DISCOUNT,
+            entityId: discount.id,
+            newObject: discount,
+          })
+          .catch(() => {});
+
+        return okAsync(convertDecimals(discount));
+      } catch (error) {
+        console.error("Error creating discount:", error);
+        return errAsync({ reason: "Não foi possível criar o desconto", statusCode: 500 });
+      }
+    },
+
+    async cancelDiscount(id: string, loggedUser: { id: string; name: string }) {
+      try {
+        const existing = await db.discount.findUnique({ where: { id } });
+
+        if (!existing) {
+          return errAsync({ reason: "Desconto não encontrado", statusCode: 404 });
+        }
+
+        if (existing.status === "CANCELLED") {
+          return errAsync({ reason: "Desconto já está cancelado", statusCode: 400 });
+        }
+
+        const updated = await db.discount.update({
+          where: { id },
+          data: { status: "CANCELLED" },
+        });
+
+        historyTracesService()
+          .create({
+            userId: loggedUser.id,
+            action: historyTraceActionConst.UPDATED,
+            entityType: historyTraceEntityConst.DISCOUNT,
+            entityId: updated.id,
+            oldObject: existing,
+            newObject: updated,
+          })
+          .catch(() => {});
+
+        return okAsync(convertDecimals(updated));
+      } catch (error) {
+        console.error("Error cancelling discount:", error);
+        return errAsync({ reason: "Não foi possível cancelar o desconto", statusCode: 500 });
+      }
+    },
+
+    async listDiscountsBySlot(workShiftSlotId: string) {
+      try {
+        const discounts = await db.discount.findMany({
+          where: { workShiftSlotId },
+          orderBy: { createdAt: "desc" },
+        });
+
+        return okAsync(discounts.map(convertDecimals));
+      } catch (error) {
+        console.error("Error listing discounts:", error);
+        return errAsync({ reason: "Não foi possível listar os descontos", statusCode: 500 });
       }
     },
   };

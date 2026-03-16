@@ -258,7 +258,7 @@ export function WorkShiftSlotForm({
       deliverymanId: defaultValues?.deliverymanId ?? undefined,
       deliverymanPaymentType: defaultValues?.deliverymanPaymentType ?? "",
       deliverymenPaymentValue: defaultValues?.deliverymenPaymentValue ?? "",
-      period: defaultValues?.period ?? (defaultPeriod ? [defaultPeriod] : []),
+      period: defaultValues?.period?.map((p) => p.toUpperCase()) ?? (defaultPeriod ? [defaultPeriod] : []),
       contractType: defaultValues?.contractType ?? "",
       startTime: defaultValues?.startTime ? dayjs(defaultValues.startTime).format("HH:mm") : "",
       endTime: defaultValues?.endTime ? dayjs(defaultValues.endTime).format("HH:mm") : "",
@@ -270,6 +270,23 @@ export function WorkShiftSlotForm({
   });
 
   const deliverymen = useFetchDeliverymen("/api/deliverymen");
+
+  // In edit mode, fetch the deliveryman data so payment method badges render
+  useEffect(() => {
+    if (!isEditing || !defaultValues?.deliverymanId || !defaultValues?.deliverymanName) return;
+    const controller = new AbortController();
+    fetch(`/api/deliverymen?pageSize=5&search=${encodeURIComponent(defaultValues.deliverymanName)}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        const data: DeliverymanOption[] = json.data ?? [];
+        const found = data.find((d) => d.id === defaultValues.deliverymanId);
+        if (found) setSelectedDeliveryman(found);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isEditing, defaultValues?.deliverymanId, defaultValues?.deliverymanName]);
 
   const watchedDeliverymanId = watch("deliverymanId");
   const watchedPeriod = watch("period") ?? [];

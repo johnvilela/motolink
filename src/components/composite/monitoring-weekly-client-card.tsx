@@ -420,6 +420,11 @@ export function MonitoringWeeklyClientCard({
                   startTime: editSheet.slot.startTime,
                   endTime: editSheet.slot.endTime,
                   deliverymenPaymentValue: editSheet.slot.deliverymenPaymentValue,
+                  paymentForm: editSheet.slot.paymentForm,
+                  deliverymanPaymentType: editSheet.slot.deliverymanPaymentType,
+                  additionalTax: Number(editSheet.slot.additionalTax) || 0,
+                  additionalTaxReason: editSheet.slot.additionalTaxReason,
+                  isWeekendRate: editSheet.slot.isWeekendRate,
                 }}
                 onSuccess={handleFormSuccess}
               />

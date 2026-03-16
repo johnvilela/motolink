@@ -5,9 +5,15 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 import { cookieConst } from "@/constants/cookies";
+import { db } from "@/lib/database";
 import { safeAction } from "@/lib/safe-action";
 import { workShiftSlotsService } from "./work-shift-slots-service";
-import { workShiftSlotMutateSchema, workShiftSlotUpdateTimesSchema } from "./work-shift-slots-types";
+import {
+  discountCancelSchema,
+  discountMutateSchema,
+  workShiftSlotMutateSchema,
+  workShiftSlotUpdateTimesSchema,
+} from "./work-shift-slots-types";
 
 const updateStatusInputSchema = z.object({
   id: z.string().uuid({ message: "ID do turno inválido" }),
@@ -76,5 +82,55 @@ export const mutateWorkShiftSlotAction = safeAction.inputSchema(mutateInputSchem
   }
 
   revalidatePath("/operacional/monitoramento/diario");
+  return { success: true };
+});
+
+export const createDiscountAction = safeAction.inputSchema(discountMutateSchema).action(async ({ parsedInput }) => {
+  const cookieStore = await cookies();
+  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+  if (!loggedUserId) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const user = await db.user.findUnique({ where: { id: loggedUserId }, select: { id: true, name: true } });
+
+  if (!user) {
+    return { error: "Usuário não encontrado" };
+  }
+
+  const result = await workShiftSlotsService().createDiscount(parsedInput, user);
+
+  if (result.isErr()) {
+    return { error: result.error.reason };
+  }
+
+  revalidatePath("/operacional/monitoramento/diario");
+  revalidatePath("/operacional/monitoramento/semanal");
+  return { success: true };
+});
+
+export const cancelDiscountAction = safeAction.inputSchema(discountCancelSchema).action(async ({ parsedInput }) => {
+  const cookieStore = await cookies();
+  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+  if (!loggedUserId) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const user = await db.user.findUnique({ where: { id: loggedUserId }, select: { id: true, name: true } });
+
+  if (!user) {
+    return { error: "Usuário não encontrado" };
+  }
+
+  const result = await workShiftSlotsService().cancelDiscount(parsedInput.id, user);
+
+  if (result.isErr()) {
+    return { error: result.error.reason };
+  }
+
+  revalidatePath("/operacional/monitoramento/diario");
+  revalidatePath("/operacional/monitoramento/semanal");
   return { success: true };
 });

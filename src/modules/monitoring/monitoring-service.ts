@@ -17,6 +17,7 @@ const monitoringClientInclude = {
 
 const monitoringWorkShiftInclude = {
   deliveryman: { select: { id: true, name: true } },
+  discounts: { orderBy: { createdAt: "desc" as const } },
 } as const;
 
 export function monitoringService() {
