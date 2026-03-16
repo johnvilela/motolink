@@ -86,6 +86,7 @@ describe("WhatsApp Service", () => {
 
     it("should return 502 when fetch throws an error", async () => {
       const branch = await createTestBranch();
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("Network failure"));
 
@@ -98,6 +99,7 @@ describe("WhatsApp Service", () => {
 
       expect(result.isErr()).toBe(true);
       expect(result._unsafeUnwrapErr().statusCode).toBe(502);
+      expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
     it("should succeed and call the correct endpoint with headers", async () => {

@@ -3,11 +3,12 @@
 ## 📊 Progress
 
 - 🗂️ Planned tasks: `83` (`100%`)
-- ✅ Done: `49/83` (`59%`)
-- 🟡 Partial: `8/83` (`10%`)
-- 🚧 Started overall: `57/83` (`69%`)
+- ✅ Done: `48/83` (`58%`)
+- 🟡 Partial: `15/83` (`18%`)
+- 🚧 Started overall: `63/83` (`76%`)
 
-> Audit based on the current codebase state on `2026-03-15`.
+> Audit based on the current codebase state on `2026-03-16`.
+> Compared with the `2026-03-15` audit: `-1` done, `+7` partial, `+6` started overall.
 
 - `[x]` implemented and present in the codebase
 - `[!]` partial, placeholder-only, or not exposed in the current app
@@ -16,29 +17,21 @@
 ## General
 
 - [x] Upload images to firebase storage
-  <!-- Firebase storage configured in src/lib/firebase.ts with upload() and remove(). Used in user form for file uploads. -->
 - [x] Create seed script to help with local development
 - [x] Global reload after branch change
 - [x] Block modules by permissions
-  <!-- Permission system in src/constants/permissions.ts with PERMISSION_MODULES and hasPermission() utility. -->
 - [!] Block actions by permissions
-  <!-- Pages check permissions via checkPagePermission(), but server actions only validate auth — not specific action permissions. -->
+  <!-- Pages and navigation check permissions, but server actions and route handlers only validate authentication — not specific action permissions. -->
 - [x] Block pages by permissions
-  <!-- All CRUD pages use checkPagePermission() and render <AccessDenied /> when unauthorized. -->
-- [!] Save mutations actions (CREATE/UPDATE/DELETE) on history-trace for all modules
-  <!-- Integrated in: users, clients, deliverymen, groups, regions, work-shift-slots, planning. Missing in: branches, sessions, monitoring, whatsapp. -->
+- [!] Save mutations actions (CREATE/UPDATE/DELETE) on history-trace for modules that have mutation actions
 - [x] Create test suites for all the services covering all methods
-  <!-- All 12 service modules have corresponding spec files in test/modules/. -->
 - [!] Create test suites for all utils files
-  <!-- 9/15 utility files have tests (60% coverage). Missing: client-cookie, convert-decimals, verify-session, cep-mask, cnpj-mask, time-mask. -->
 
 ## Authentication
 
 - [x] Create private and public routes
 - [x] Login with email & password (with error handling)
-  <!-- Full implementation with argon2 hashing, status checks, Portuguese error messages. -->
 - [x] Secure the API endpoint to deny unauthorized/unauthenticated requests
-  <!-- Middleware in proxy.ts validates session cookies on every request. -->
 
 ## Users (colaboradores)
 
@@ -47,13 +40,10 @@
 - [x] List users by branch with pagination
 - [x] Search user by name and email
 - [x] View user detail with the permissions table
-  <!-- Permissions displayed as badges on the detail page. -->
 - [ ] Display the logs of the user on the user detail
 - [ ] Block and unblock a user
-- [x] Send invitation to new user with link to create a password
-  <!-- Creates verification tokens for new users. -->
+- [!] Send invitation to new user with link to create a password
 - [x] Page to create a password
-  <!-- /trocar-senha route with token/userId params. -->
 - [ ] Page to change password
 - [ ] Send forgot password link to user whatsapp
 
@@ -64,7 +54,6 @@
 - [x] List groups by branch with pagination
 - [x] Search group by name
 - [!] View group detail with clients related to it
-  <!-- Detail page exists with basic info but does not list related clients. -->
 - [x] Delete groups without relationships
 
 ## Regions
@@ -74,7 +63,6 @@
 - [x] List regions by branch with pagination
 - [x] Search region by name
 - [!] View regions detail with clients/deliverymen related to it
-  <!-- Detail page exists with basic info but does not list related clients or deliverymen. -->
 - [x] Delete regions without relationships
 
 ## Clients/Commercial Conditions
@@ -93,14 +81,12 @@
 - [x] List deliveryman by branch with pagination
 - [x] Search deliveryman by name and phone
 - [!] View deliveryman details with logs
-  <!-- Detail page exists with documents section but no history/log display. -->
 - [x] Block/Unblock a deliveryman
 - [x] Soft-delete a deliveryman
 
 ## Client Block
 
-- [ ] Block and unblock a deliveryman on a single client
-  <!-- ClientBlock model exists in schema but no service, actions, or UI implemented. -->
+- [!] Block and unblock a deliveryman on a single client
 
 ## Planning
 
@@ -114,9 +100,7 @@
 - [x] List work-shift grouped by client
 - [x] Change status following a defined flow (OPEN > INVITED > CONFIRMED > CHECKED_IN > PENDING_COMPLETION > COMPLETED)
 - [x] Log all actions done on the work-shift
-  <!-- History traces created for CREATED, UPDATED, DELETED, COPIED actions. -->
 - [!] Send invitation by whatsapp to the deliveryman
-  <!-- WhatsApp service and UI button exist but dialog shows "Funcionalidade em desenvolvimento". -->
 - [ ] Send invitations by client
 - [ ] Send invitations by group
 - [ ] When the work-shift is marked as COMPLETED it should create a Payment Request
@@ -128,18 +112,16 @@
 ## Monitoring
 
 - [x] Daily monitoring interface
-  <!-- /operacional/monitoramento/diario with filters by group, client, and date. -->
 - [x] Weekly monitoring interface
-  <!-- /operacional/monitoramento/semanal with filters by group, client, and date range. -->
 
 ## Payment Request
 
 - [ ] List all payment request by branch
-- [ ] Search payment request by deliveryman, by date, by status
-- [ ] Edit a payment request
-- [ ] Approve payment request that was edited
-- [ ] Deny a payment request
-- [ ] View a payment request log
+- [!] Search payment request by deliveryman, by date, by status
+- [!] Edit a payment request
+- [!] Approve payment request that was edited
+- [!] Deny a payment request
+- [!] View a payment request log
 
 ## Events
 
@@ -151,7 +133,7 @@
 ## History Trace
 
 - [!] List history trace filtered by entity type, entity id, date period, action
-  <!-- Service supports entityType, userId, entityId, action filters. Date period filter not implemented. -->
+
 
 ## Notifications
 

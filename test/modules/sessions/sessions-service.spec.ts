@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.AUTH_SECRET ??= "test-secret";
 
@@ -27,6 +27,10 @@ describe("Sessions Service", () => {
 
   beforeEach(async () => {
     await cleanDatabase();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe(".create", () => {
@@ -178,12 +182,15 @@ describe("Sessions Service", () => {
     });
 
     it("should return 500 when token does not exist", async () => {
+      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
       const result = await service.delete("non-existent-token");
 
       expect(result.isErr()).toBe(true);
 
       const error = result._unsafeUnwrapErr();
       expect(error.statusCode).toBe(500);
+      expect(consoleErrorSpy).toHaveBeenCalled();
     });
   });
 });

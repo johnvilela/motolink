@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 process.env.AUTH_SECRET ??= "test-secret";
 
+import { historyTraceActionConst, historyTraceEntityConst } from "../../../src/constants/history-trace";
 import { db } from "../../../src/lib/database";
 import { paymentRequestsService } from "../../../src/modules/payment-requests/payment-requests-service";
 import type { PaymentRequestMutateDTO } from "../../../src/modules/payment-requests/payment-requests-types";
@@ -103,6 +104,38 @@ async function createBaseBody(): Promise<PaymentRequestMutateDTO> {
   };
 }
 
+async function createActorUser() {
+  return db.user.create({
+    data: {
+      id: LOGGED_USER_ID,
+      name: "Actor User",
+      email: "actor@example.com",
+      status: "ACTIVE",
+    },
+  });
+}
+
+async function findHistoryTraceOrThrow(where: {
+  entityId: string;
+  action: string;
+  entityType: string;
+}) {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const trace = await db.historyTrace.findFirst({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (trace) {
+      return trace;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+
+  throw new Error(`History trace not found for ${where.entityType}:${where.entityId}:${where.action}`);
+}
+
 // --- Tests ---------------------------------------------------------------
 
 describe("Payment Requests Service", () => {
@@ -126,6 +159,28 @@ describe("Payment Requests Service", () => {
       expect(paymentRequest.deliverymanId).toBe(body.deliverymanId);
     });
 
+    it("should create a history trace when a payment request is created", async () => {
+      const body = await createBaseBody();
+      await createActorUser();
+
+      const result = await service.create(body, LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+      const paymentRequest = result._unsafeUnwrap();
+
+      const trace = await findHistoryTraceOrThrow({
+        entityType: historyTraceEntityConst.PAYMENT_REQUEST,
+        entityId: paymentRequest.id,
+        action: historyTraceActionConst.CREATED,
+      });
+
+      expect(trace.userId).toBe(LOGGED_USER_ID);
+      expect(trace.changes).toMatchObject({
+        amount: { old: null, new: "150" },
+        status: { old: null, new: "NEW" },
+      });
+    });
+
     it("should create with a custom status", async () => {
       const body = await createBaseBody();
       body.status = "APPROVED";
@@ -145,6 +200,25 @@ describe("Payment Requests Service", () => {
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().amount).toBe(200);
+    });
+
+    it("should create a history trace when a payment request is updated", async () => {
+      const existing = await createTestPaymentRequest({ amount: 100 });
+      await createActorUser();
+
+      const result = await service.update(existing.id, { amount: 200 }, LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+
+      const trace = await findHistoryTraceOrThrow({
+        entityType: historyTraceEntityConst.PAYMENT_REQUEST,
+        entityId: existing.id,
+        action: historyTraceActionConst.UPDATED,
+      });
+
+      expect(trace.changes).toMatchObject({
+        amount: { old: "100", new: "200" },
+      });
     });
 
     it("should update status successfully", async () => {
@@ -193,6 +267,25 @@ describe("Payment Requests Service", () => {
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().status).toBe("APPROVED");
+    });
+
+    it("should create a history trace when status is updated", async () => {
+      const existing = await createTestPaymentRequest({ status: "NEW" });
+      await createActorUser();
+
+      const result = await service.updateStatus(existing.id, "APPROVED", LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+
+      const trace = await findHistoryTraceOrThrow({
+        entityType: historyTraceEntityConst.PAYMENT_REQUEST,
+        entityId: existing.id,
+        action: historyTraceActionConst.UPDATED,
+      });
+
+      expect(trace.changes).toMatchObject({
+        status: { old: "NEW", new: "APPROVED" },
+      });
     });
 
     it("should return 404 when not found", async () => {
