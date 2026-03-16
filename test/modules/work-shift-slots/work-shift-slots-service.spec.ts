@@ -37,6 +37,7 @@ const BASE_BODY: WorkShiftSlotMutateDTO = {
   deliverymanPerDeliveryNight: 0,
   isWeekendRate: false,
   additionalTax: 0,
+  rainTax: 0,
 };
 
 // --- Test Data Factories -------------------------------------------------

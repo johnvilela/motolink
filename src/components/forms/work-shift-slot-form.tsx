@@ -108,6 +108,7 @@ interface WorkShiftSlotFormProps {
     deliverymenPaymentValue?: string;
     additionalTax?: number;
     additionalTaxReason?: string;
+    rainTax?: number;
     isWeekendRate?: boolean;
     deliverymanAmountDay?: number;
     deliverymanAmountNight?: number;
@@ -132,6 +133,8 @@ const formSchema = z.object({
   isWeekendRate: z.boolean().default(false),
   additionalTax: z.coerce.number().default(0),
   additionalTaxReason: z.string().default(""),
+  isRainTax: z.boolean().default(false),
+  rainTax: z.coerce.number().default(0),
 });
 
 type FormInputValues = z.input<typeof formSchema>;
@@ -266,6 +269,8 @@ export function WorkShiftSlotForm({
       isWeekendRate: defaultValues?.isWeekendRate ?? isWeekend,
       additionalTax: defaultValues?.additionalTax ?? 0,
       additionalTaxReason: defaultValues?.additionalTaxReason ?? "",
+      isRainTax: (defaultValues?.rainTax ?? 0) > 0,
+      rainTax: defaultValues?.rainTax ?? 0,
     },
   });
 
@@ -294,6 +299,8 @@ export function WorkShiftSlotForm({
   const watchedIsWeekendRate = watch("isWeekendRate");
   const watchedPaymentType = watch("deliverymanPaymentType");
   const watchedAdditionalTax = toNum(watch("additionalTax") as number | undefined);
+  const watchedIsRainTax = watch("isRainTax");
+  const watchedRainTax = toNum(watch("rainTax") as number | undefined);
 
   const { execute, isExecuting } = useAction(mutateWorkShiftSlotAction, {
     onSuccess: ({ data }) => {
@@ -466,6 +473,7 @@ export function WorkShiftSlotForm({
       isWeekendRate: data.isWeekendRate,
       additionalTax: data.additionalTax,
       additionalTaxReason: data.additionalTaxReason || undefined,
+      rainTax: data.rainTax,
     });
   }
 
@@ -589,6 +597,31 @@ export function WorkShiftSlotForm({
           </SelectContent>
         </Select>
         <FieldError errors={[errors.contractType]} />
+      </Field>
+
+      {/* Rain tax toggle */}
+      <Field>
+        <div className="flex items-center gap-3">
+          <Switch
+            id="isRainTax"
+            checked={watchedIsRainTax}
+            disabled={!cc?.rainTax || toNum(cc.rainTax) === 0}
+            onCheckedChange={(checked) => {
+              const isOn = !!checked;
+              setValue("isRainTax", isOn);
+              setValue("rainTax", isOn ? toNum(cc?.rainTax) : 0);
+            }}
+          />
+          <FieldLabel htmlFor="isRainTax" className="mb-0">
+            Taxa de chuva
+          </FieldLabel>
+        </div>
+        {watchedIsRainTax && (
+          <p className="mt-1 text-xs text-muted-foreground">{formatMoneyDisplay(toNum(cc?.rainTax))}</p>
+        )}
+        {(!cc?.rainTax || toNum(cc.rainTax) === 0) && (
+          <p className="mt-1 text-xs text-muted-foreground">Cliente sem taxa de chuva configurada</p>
+        )}
       </Field>
 
       {/* Start / End time */}
@@ -742,10 +775,16 @@ export function WorkShiftSlotForm({
                 <span>{formatMoneyDisplay(watchedAdditionalTax)}</span>
               </div>
             )}
+            {watchedIsRainTax && watchedRainTax > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxa de chuva</span>
+                <span>{formatMoneyDisplay(watchedRainTax)}</span>
+              </div>
+            )}
             <div className="border-t pt-1">
               <div className="flex justify-between font-semibold">
                 <span>Total</span>
-                <span>{formatMoneyDisplay(calculatedValue + watchedAdditionalTax)}</span>
+                <span>{formatMoneyDisplay(calculatedValue + watchedAdditionalTax + watchedRainTax)}</span>
               </div>
             </div>
           </div>

@@ -137,10 +137,11 @@ export function monitoringService() {
         const plannedByClientDate = new Map<string, Map<string, typeof planned>>();
         for (const planning of planned) {
           const dateStr = dayjs.utc(planning.plannedDate).format("YYYY-MM-DD");
-          if (!plannedByClientDate.has(planning.clientId)) {
-            plannedByClientDate.set(planning.clientId, new Map());
+          let dateMap = plannedByClientDate.get(planning.clientId);
+          if (!dateMap) {
+            dateMap = new Map();
+            plannedByClientDate.set(planning.clientId, dateMap);
           }
-          const dateMap = plannedByClientDate.get(planning.clientId)!;
           const datePlannings = dateMap.get(dateStr) ?? [];
           datePlannings.push(planning);
           dateMap.set(dateStr, datePlannings);
@@ -149,10 +150,11 @@ export function monitoringService() {
         const workShiftsByClientDate = new Map<string, Map<string, typeof workShifts>>();
         for (const workShift of workShifts) {
           const dateStr = dayjs.utc(workShift.shiftDate).format("YYYY-MM-DD");
-          if (!workShiftsByClientDate.has(workShift.clientId)) {
-            workShiftsByClientDate.set(workShift.clientId, new Map());
+          let dateMap = workShiftsByClientDate.get(workShift.clientId);
+          if (!dateMap) {
+            dateMap = new Map();
+            workShiftsByClientDate.set(workShift.clientId, dateMap);
           }
-          const dateMap = workShiftsByClientDate.get(workShift.clientId)!;
           const dateShifts = dateMap.get(dateStr) ?? [];
           dateShifts.push(workShift);
           dateMap.set(dateStr, dateShifts);

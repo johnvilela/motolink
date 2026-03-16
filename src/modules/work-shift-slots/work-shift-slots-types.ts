@@ -24,6 +24,7 @@ export const workShiftSlotMutateSchema = z.object({
   isWeekendRate: z.boolean().default(false),
   additionalTax: z.coerce.number().default(0),
   additionalTaxReason: z.string().optional(),
+  rainTax: z.coerce.number().default(0),
 });
 
 export type WorkShiftSlotMutateDTO = z.infer<typeof workShiftSlotMutateSchema>;

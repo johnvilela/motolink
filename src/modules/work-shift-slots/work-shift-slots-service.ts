@@ -13,17 +13,18 @@ import type {
 } from "./work-shift-slots-types";
 
 function calculateTotalValueToPay(body: WorkShiftSlotMutateDTO): number {
-  const { paymentForm, additionalTax } = body;
+  const { paymentForm, additionalTax, rainTax } = body;
 
   if (paymentForm === "GUARANTEED") {
     return (
       body.guaranteedQuantityDay * body.deliverymanPerDeliveryDay +
       body.guaranteedQuantityNight * body.deliverymanPerDeliveryNight +
-      additionalTax
+      additionalTax +
+      rainTax
     );
   }
 
-  return body.deliverymanAmountDay + body.deliverymanAmountNight + additionalTax;
+  return body.deliverymanAmountDay + body.deliverymanAmountNight + additionalTax + rainTax;
 }
 
 function toWorkShiftSlotCreateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedCreateInput {
