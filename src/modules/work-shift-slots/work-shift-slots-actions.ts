@@ -159,5 +159,5 @@ export const copyWorkShiftSlotsAction = safeAction
 
     revalidatePath("/operacional/monitoramento/diario");
     revalidatePath("/operacional/monitoramento/semanal");
-    return { success: true };
+    return { success: true, degradedCount: result.value.degradedCount };
   });

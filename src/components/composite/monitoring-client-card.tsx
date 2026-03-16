@@ -179,7 +179,14 @@ export function MonitoringClientCard({
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
-      toast.success("Turnos copiados com sucesso");
+      const degradedCount = result?.data?.degradedCount ?? 0;
+      if (degradedCount > 0) {
+        toast.warning(
+          `Turnos copiados. ${degradedCount} turno(s) copiado(s) como aberto(s) devido a conflitos de horário.`,
+        );
+      } else {
+        toast.success("Turnos copiados com sucesso");
+      }
       onCancelCopy?.();
       onRefresh?.();
     }

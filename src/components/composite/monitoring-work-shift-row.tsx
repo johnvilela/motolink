@@ -166,6 +166,7 @@ export function MonitoringWorkShiftRow({
   const isAbsent = status === "ABSENT";
   const isUnanswered = status === "UNANSWERED";
   const isCancelled = status === "CANCELLED";
+  const isOpenWithoutDeliveryman = status === "OPEN" && !slot.deliveryman;
 
   const formatTime = (val: string | null | undefined) => {
     if (!val) return "";
@@ -177,7 +178,13 @@ export function MonitoringWorkShiftRow({
       <div
         className={cn(
           "flex items-center rounded-md border-l-4 bg-muted/30 px-4 py-3",
-          isAbsent ? "border-l-orange-400" : isUnanswered || isCancelled ? "border-l-gray-400" : "border-l-primary",
+          isAbsent
+            ? "border-l-orange-400"
+            : isUnanswered || isCancelled
+              ? "border-l-gray-400"
+              : status === "OPEN" && !slot.deliveryman
+                ? "border-l-yellow-400"
+                : "border-l-primary",
         )}
       >
         <div className="flex items-center gap-4">
@@ -235,23 +242,35 @@ export function MonitoringWorkShiftRow({
 
         <TooltipProvider>
           <div className="ml-auto flex shrink-0 items-center gap-1 pl-6">
-            {primaryTransition && (
+            {isOpenWithoutDeliveryman ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleAdvanceStatus} disabled={isExecuting}>
-                    {isExecuting ? (
-                      <Spinner className="mr-1 size-3" />
-                    ) : (
-                      (() => {
-                        const TransitionIcon = WORK_SHIFT_SLOT_STATUS_ICONS[primaryTransition];
-                        return <TransitionIcon className="mr-1 size-3.5" />;
-                      })()
-                    )}
-                    {WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition]}
+                  <Button variant="outline" size="sm" onClick={() => setEditSheetOpen(true)}>
+                    <SendIcon className="mr-1 size-3.5" />
+                    Convidar
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Avançar status</TooltipContent>
+                <TooltipContent>Selecionar entregador</TooltipContent>
               </Tooltip>
+            ) : (
+              primaryTransition && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={handleAdvanceStatus} disabled={isExecuting}>
+                      {isExecuting ? (
+                        <Spinner className="mr-1 size-3" />
+                      ) : (
+                        (() => {
+                          const TransitionIcon = WORK_SHIFT_SLOT_STATUS_ICONS[primaryTransition];
+                          return <TransitionIcon className="mr-1 size-3.5" />;
+                        })()
+                      )}
+                      {WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition]}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Avançar status</TooltipContent>
+                </Tooltip>
+              )
             )}
 
             <Tooltip>

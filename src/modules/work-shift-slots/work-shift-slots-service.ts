@@ -27,6 +27,36 @@ function calculateTotalValueToPay(body: WorkShiftSlotMutateDTO): number {
   return body.deliverymanAmountDay + body.deliverymanAmountNight + additionalTax + rainTax;
 }
 
+const TERMINAL_STATUSES = ["CANCELLED", "ABSENT", "REJECTED", "UNANSWERED"];
+
+async function findOverlappingSlots(params: {
+  deliverymanId: string;
+  shiftDate: Date;
+  startTime: Date;
+  endTime: Date;
+  excludeSlotId?: string;
+}): Promise<{ id: string }[]> {
+  return db.workShiftSlot.findMany({
+    where: {
+      deliverymanId: params.deliverymanId,
+      shiftDate: params.shiftDate,
+      status: { notIn: TERMINAL_STATUSES },
+      startTime: { lt: params.endTime },
+      endTime: { gt: params.startTime },
+      ...(params.excludeSlotId && { id: { not: params.excludeSlotId } }),
+    },
+    select: { id: true },
+  });
+}
+
+function hasOverlapInList(
+  intervals: Array<{ startTime: Date; endTime: Date }>,
+  startTime: Date,
+  endTime: Date,
+): boolean {
+  return intervals.some((i) => i.startTime < endTime && i.endTime > startTime);
+}
+
 function toWorkShiftSlotCreateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedCreateInput {
   const { isFreelancer: _isFreelancer, ...data } = body;
   return { ...data, totalValueToPay: calculateTotalValueToPay(body) };
@@ -53,6 +83,22 @@ export function workShiftSlotsService() {
             return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
           }
 
+          if (body.deliverymanId) {
+            const overlaps = await findOverlappingSlots({
+              deliverymanId: body.deliverymanId,
+              shiftDate: body.shiftDate,
+              startTime: body.startTime,
+              endTime: body.endTime,
+              excludeSlotId: id,
+            });
+            if (overlaps.length > 0) {
+              return errAsync({
+                reason: "Este entregador já possui um turno com horário conflitante nesta data",
+                statusCode: 400,
+              });
+            }
+          }
+
           const updated = await db.workShiftSlot.update({
             where: { id },
             data: toWorkShiftSlotUpdateData(body),
@@ -71,6 +117,21 @@ export function workShiftSlotsService() {
             .catch(() => {});
 
           return okAsync(convertDecimals(updated));
+        }
+
+        if (body.deliverymanId) {
+          const overlaps = await findOverlappingSlots({
+            deliverymanId: body.deliverymanId,
+            shiftDate: body.shiftDate,
+            startTime: body.startTime,
+            endTime: body.endTime,
+          });
+          if (overlaps.length > 0) {
+            return errAsync({
+              reason: "Este entregador já possui um turno com horário conflitante nesta data",
+              statusCode: 400,
+            });
+          }
         }
 
         const slot = await db.workShiftSlot.create({
@@ -278,50 +339,84 @@ export function workShiftSlotsService() {
           deliveryman: { select: { id: true, name: true } },
         } as const;
 
-        const createdSlots = await Promise.all(
-          sourceSlots.map((slot) => {
-            const slotData: Prisma.WorkShiftSlotUncheckedCreateInput = {
-              deliverymanId: slot.deliverymanId,
-              clientId: slot.clientId,
-              contractType: slot.contractType,
-              shiftDate: targetDate,
-              startTime: slot.startTime,
-              endTime: slot.endTime,
-              period: slot.period,
-              auditStatus: slot.auditStatus,
-              checkInAt: slot.checkInAt,
-              checkOutAt: slot.checkOutAt,
-              inviteSentAt: slot.inviteSentAt,
-              inviteToken: slot.inviteToken,
-              inviteExpiresAt: slot.inviteExpiresAt,
-              trackingConnected: slot.trackingConnected,
-              trackingConnectedAt: slot.trackingConnectedAt,
-              additionalTax: slot.additionalTax,
-              additionalTaxReason: slot.additionalTaxReason,
-              deliverymanAmountDay: slot.deliverymanAmountDay,
-              deliverymanAmountNight: slot.deliverymanAmountNight,
-              deliverymanPaymentType: slot.deliverymanPaymentType,
-              deliverymenPaymentValue: slot.deliverymenPaymentValue,
-              paymentForm: slot.paymentForm,
-              guaranteedQuantityDay: slot.guaranteedQuantityDay,
-              guaranteedDayTax: slot.guaranteedDayTax,
-              guaranteedQuantityNight: slot.guaranteedQuantityNight,
-              guaranteedNightTax: slot.guaranteedNightTax,
-              deliverymanPerDeliveryDay: slot.deliverymanPerDeliveryDay,
-              deliverymanPerDeliveryNight: slot.deliverymanPerDeliveryNight,
-              isWeekendRate: slot.isWeekendRate,
-              totalValueToPay: slot.totalValueToPay,
-              status: slot.deliverymanId ? "INVITED" : "OPEN",
-            };
+        // Build overlap tracker from existing slots on target date
+        const deliverymanIds = [...new Set(sourceSlots.map((s) => s.deliverymanId).filter(Boolean))] as string[];
+        const existingTargetSlots =
+          deliverymanIds.length > 0
+            ? await db.workShiftSlot.findMany({
+                where: {
+                  deliverymanId: { in: deliverymanIds },
+                  shiftDate: targetDate,
+                  status: { notIn: TERMINAL_STATUSES },
+                },
+                select: { deliverymanId: true, startTime: true, endTime: true },
+              })
+            : [];
 
-            return db.workShiftSlot.create({
-              data: slotData,
-              include,
-            });
-          }),
-        );
+        const overlapTracker = new Map<string, Array<{ startTime: Date; endTime: Date }>>();
+        for (const slot of existingTargetSlots) {
+          if (!slot.deliverymanId) continue;
+          const list = overlapTracker.get(slot.deliverymanId) ?? [];
+          list.push({ startTime: slot.startTime, endTime: slot.endTime });
+          overlapTracker.set(slot.deliverymanId, list);
+        }
 
-        for (const created of createdSlots) {
+        let degradedCount = 0;
+        const createdSlots = [];
+
+        for (const slot of sourceSlots) {
+          let assignDeliveryman = slot.deliverymanId;
+          let status: string = slot.deliverymanId ? "INVITED" : "OPEN";
+
+          if (assignDeliveryman) {
+            const tracked = overlapTracker.get(assignDeliveryman) ?? [];
+            if (hasOverlapInList(tracked, slot.startTime, slot.endTime)) {
+              assignDeliveryman = null;
+              status = "OPEN";
+              degradedCount++;
+            } else {
+              tracked.push({ startTime: slot.startTime, endTime: slot.endTime });
+              overlapTracker.set(assignDeliveryman, tracked);
+            }
+          }
+
+          const slotData: Prisma.WorkShiftSlotUncheckedCreateInput = {
+            deliverymanId: assignDeliveryman,
+            clientId: slot.clientId,
+            contractType: slot.contractType,
+            shiftDate: targetDate,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            period: slot.period,
+            auditStatus: slot.auditStatus,
+            checkInAt: slot.checkInAt,
+            checkOutAt: slot.checkOutAt,
+            inviteSentAt: slot.inviteSentAt,
+            inviteToken: slot.inviteToken,
+            inviteExpiresAt: slot.inviteExpiresAt,
+            trackingConnected: slot.trackingConnected,
+            trackingConnectedAt: slot.trackingConnectedAt,
+            additionalTax: slot.additionalTax,
+            additionalTaxReason: slot.additionalTaxReason,
+            deliverymanAmountDay: slot.deliverymanAmountDay,
+            deliverymanAmountNight: slot.deliverymanAmountNight,
+            deliverymanPaymentType: slot.deliverymanPaymentType,
+            deliverymenPaymentValue: slot.deliverymenPaymentValue,
+            paymentForm: slot.paymentForm,
+            guaranteedQuantityDay: slot.guaranteedQuantityDay,
+            guaranteedDayTax: slot.guaranteedDayTax,
+            guaranteedQuantityNight: slot.guaranteedQuantityNight,
+            guaranteedNightTax: slot.guaranteedNightTax,
+            deliverymanPerDeliveryDay: slot.deliverymanPerDeliveryDay,
+            deliverymanPerDeliveryNight: slot.deliverymanPerDeliveryNight,
+            isWeekendRate: slot.isWeekendRate,
+            totalValueToPay: slot.totalValueToPay,
+            status,
+          };
+
+          const created = await db.workShiftSlot.create({ data: slotData, include });
+          createdSlots.push(created);
+
           historyTracesService()
             .create({
               userId: loggedUserId,
@@ -333,7 +428,7 @@ export function workShiftSlotsService() {
             .catch(() => {});
         }
 
-        return okAsync(createdSlots.map(convertDecimals));
+        return okAsync({ slots: createdSlots.map(convertDecimals), degradedCount });
       } catch (error) {
         console.error("Error copying work shift slots:", error);
         return errAsync({ reason: "Não foi possível copiar os turnos de trabalho", statusCode: 500 });

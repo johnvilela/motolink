@@ -274,6 +274,142 @@ describe("Work Shift Slots Service", () => {
       });
     });
 
+    it("should block create when overlapping slot exists for same deliveryman", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+
+      // Create an existing slot for the deliveryman
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman.id,
+        shiftDate: SHIFT_DATE,
+        startTime: new Date("2099-06-15T09:00:00Z"),
+        endTime: new Date("2099-06-15T17:00:00Z"),
+      });
+
+      // Try to create an overlapping slot
+      const result = await service.upsert(
+        undefined,
+        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id },
+        LOGGED_USER_ID,
+      );
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().statusCode).toBe(400);
+      expect(result._unsafeUnwrapErr().reason).toBe(
+        "Este entregador já possui um turno com horário conflitante nesta data",
+      );
+    });
+
+    it("should allow create with non-overlapping times for same deliveryman", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+
+      // Existing slot: 08:00-12:00
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman.id,
+        shiftDate: SHIFT_DATE,
+        startTime: new Date("2099-06-15T08:00:00Z"),
+        endTime: new Date("2099-06-15T12:00:00Z"),
+      });
+
+      // New slot: 12:00-18:00 (no overlap, adjacent is fine)
+      const result = await service.upsert(
+        undefined,
+        {
+          ...BASE_BODY,
+          clientId: client.id,
+          deliverymanId: deliveryman.id,
+          startTime: new Date("2099-06-15T12:00:00Z"),
+          endTime: new Date("2099-06-15T18:00:00Z"),
+        },
+        LOGGED_USER_ID,
+      );
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it("should allow overlapping slots for different deliverymen", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman1 = await createTestDeliveryman({ branchId: branch.id });
+      const deliveryman2 = await createTestDeliveryman({ branchId: branch.id });
+
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman1.id,
+        shiftDate: SHIFT_DATE,
+      });
+
+      const result = await service.upsert(
+        undefined,
+        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman2.id },
+        LOGGED_USER_ID,
+      );
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it("should skip overlap check for OPEN slots (no deliveryman)", async () => {
+      const client = await createTestClient();
+
+      await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
+
+      // Create another OPEN slot at the same time — should succeed
+      const result = await service.upsert(undefined, { ...BASE_BODY, clientId: client.id }, LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it("should exclude current slot during update (not conflict with itself)", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+
+      const createResult = await service.upsert(
+        undefined,
+        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id },
+        LOGGED_USER_ID,
+      );
+      expect(createResult.isOk()).toBe(true);
+      const slotId = createResult._unsafeUnwrap().id;
+
+      // Update the same slot — should not conflict with itself
+      const updateResult = await service.upsert(
+        slotId,
+        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id, status: "FILLED" },
+        LOGGED_USER_ID,
+      );
+
+      expect(updateResult.isOk()).toBe(true);
+    });
+
+    it("should ignore terminal-status slots in overlap check", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+
+      // Create a CANCELLED slot for the deliveryman
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman.id,
+        shiftDate: SHIFT_DATE,
+        status: "CANCELLED",
+      });
+
+      // Should succeed because the existing slot has terminal status
+      const result = await service.upsert(
+        undefined,
+        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id },
+        LOGGED_USER_ID,
+      );
+
+      expect(result.isOk()).toBe(true);
+    });
+
     it("should update the work shift slot when id is provided", async () => {
       const client = await createTestClient();
       const created = await createTestWorkShiftSlot({ clientId: client.id });
@@ -345,7 +481,7 @@ describe("Work Shift Slots Service", () => {
       const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
-      const copied = result._unsafeUnwrap();
+      const { slots: copied } = result._unsafeUnwrap();
       expect(copied).toHaveLength(2);
       expect(copied[0].shiftDate).toEqual(targetDate);
       expect(copied[1].shiftDate).toEqual(targetDate);
@@ -359,7 +495,7 @@ describe("Work Shift Slots Service", () => {
       const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
-      const copied = result._unsafeUnwrap();
+      const { slots: copied } = result._unsafeUnwrap();
       expect(copied[0].status).toBe("OPEN");
       expect(copied[0].deliverymanId).toBeNull();
     });
@@ -374,7 +510,7 @@ describe("Work Shift Slots Service", () => {
       const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
-      const copied = result._unsafeUnwrap();
+      const { slots: copied } = result._unsafeUnwrap();
       expect(copied[0].status).toBe("INVITED");
       expect(copied[0].deliverymanId).toBe(deliveryman.id);
     });
@@ -397,8 +533,72 @@ describe("Work Shift Slots Service", () => {
       const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
-      const copied = result._unsafeUnwrap();
+      const { slots: copied } = result._unsafeUnwrap();
       expect(copied[0].id).not.toBe(source.id);
+    });
+
+    it("should degrade to OPEN when deliveryman has conflict on target date", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+      const targetDate = new Date("2099-06-20");
+
+      // Create source slot with deliveryman
+      await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
+
+      // Create existing conflicting slot on target date
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman.id,
+        shiftDate: targetDate,
+        startTime: new Date("2099-06-20T09:00:00Z"),
+        endTime: new Date("2099-06-20T17:00:00Z"),
+      });
+
+      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+      const { slots: copied, degradedCount } = result._unsafeUnwrap();
+      expect(copied[0].status).toBe("OPEN");
+      expect(copied[0].deliverymanId).toBeNull();
+      expect(degradedCount).toBe(1);
+    });
+
+    it("should handle intra-batch conflicts (same deliveryman, overlapping source slots)", async () => {
+      const branch = await createTestBranch();
+      const client1 = await createTestClient({ branchId: branch.id });
+      const client2 = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+
+      // Two overlapping source slots for the same deliveryman on different clients
+      await createTestWorkShiftSlot({ clientId: client1.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
+      await createTestWorkShiftSlot({ clientId: client2.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
+
+      const targetDate = new Date("2099-06-20");
+
+      // Copy client1 slots first (will succeed)
+      const result1 = await service.copySlots(SHIFT_DATE, targetDate, client1.id, LOGGED_USER_ID);
+      expect(result1.isOk()).toBe(true);
+      expect(result1._unsafeUnwrap().degradedCount).toBe(0);
+
+      // Copy client2 slots - deliveryman now has conflict from first copy
+      const result2 = await service.copySlots(SHIFT_DATE, targetDate, client2.id, LOGGED_USER_ID);
+      expect(result2.isOk()).toBe(true);
+      const { slots: copied2, degradedCount } = result2._unsafeUnwrap();
+      expect(copied2[0].status).toBe("OPEN");
+      expect(copied2[0].deliverymanId).toBeNull();
+      expect(degradedCount).toBe(1);
+    });
+
+    it("should return correct degradedCount of 0 when no conflicts", async () => {
+      const client = await createTestClient();
+      await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
+
+      const targetDate = new Date("2099-06-20");
+      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap().degradedCount).toBe(0);
     });
   });
 

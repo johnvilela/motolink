@@ -115,11 +115,7 @@ async function createActorUser() {
   });
 }
 
-async function findHistoryTraceOrThrow(where: {
-  entityId: string;
-  action: string;
-  entityType: string;
-}) {
+async function findHistoryTraceOrThrow(where: { entityId: string; action: string; entityType: string }) {
   for (let attempt = 0; attempt < 10; attempt++) {
     const trace = await db.historyTrace.findFirst({
       where,
