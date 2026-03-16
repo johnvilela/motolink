@@ -11,6 +11,7 @@ import { workShiftSlotsService } from "./work-shift-slots-service";
 import {
   discountCancelSchema,
   discountMutateSchema,
+  workShiftSlotCopySchema,
   workShiftSlotMutateSchema,
   workShiftSlotUpdateTimesSchema,
 } from "./work-shift-slots-types";
@@ -134,3 +135,29 @@ export const cancelDiscountAction = safeAction.inputSchema(discountCancelSchema)
   revalidatePath("/operacional/monitoramento/semanal");
   return { success: true };
 });
+
+export const copyWorkShiftSlotsAction = safeAction
+  .inputSchema(workShiftSlotCopySchema)
+  .action(async ({ parsedInput }) => {
+    const cookieStore = await cookies();
+    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+    if (!loggedUserId) {
+      return { error: "Usuário não autenticado" };
+    }
+
+    const result = await workShiftSlotsService().copySlots(
+      parsedInput.sourceDate,
+      parsedInput.targetDate,
+      parsedInput.clientId,
+      loggedUserId,
+    );
+
+    if (result.isErr()) {
+      return { error: result.error.reason };
+    }
+
+    revalidatePath("/operacional/monitoramento/diario");
+    revalidatePath("/operacional/monitoramento/semanal");
+    return { success: true };
+  });

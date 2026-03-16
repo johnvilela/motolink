@@ -3,7 +3,9 @@
 import dayjs from "dayjs";
 import {
   BanknoteIcon,
+  ClipboardPasteIcon,
   CloudRainIcon,
+  CopyIcon,
   CreditCardIcon,
   MapPinIcon,
   MoonIcon,
@@ -15,8 +17,20 @@ import {
   UserIcon,
   UtensilsIcon,
 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
+import { toast } from "sonner";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +44,7 @@ import {
   type WorkShiftSlotStatus,
 } from "@/constants/work-shift-slot-status";
 import { cn } from "@/lib/cn";
+import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { MonitoringWorkShiftDetailSheet } from "./monitoring-work-shift-detail-sheet";
 
@@ -117,6 +132,9 @@ interface MonitoringWeeklyClientCardProps {
   weekDays: string[];
   dayLabels: string[];
   onRefresh?: () => void;
+  copySource?: { clientId: string; date: string } | null;
+  onCopy?: (date: string) => void;
+  onCancelCopy?: () => void;
 }
 
 function isNonEmpty(val: unknown): boolean {
@@ -143,13 +161,43 @@ export function MonitoringWeeklyClientCard({
   weekDays,
   dayLabels,
   onRefresh,
+  copySource,
+  onCopy,
+  onCancelCopy,
 }: MonitoringWeeklyClientCardProps) {
   const [selectedSlot, setSelectedSlot] = useState<{ slot: WorkShiftSlot; date: string } | null>(null);
   const [addSheet, setAddSheet] = useState<{ date: string; period?: string } | null>(null);
   const [editSheet, setEditSheet] = useState<{ slot: WorkShiftSlot; date: string } | null>(null);
+  const [confirmPasteDate, setConfirmPasteDate] = useState<string | null>(null);
+
+  const { executeAsync: executeCopy, isExecuting: isCopying } = useAction(copyWorkShiftSlotsAction);
 
   const cc = client.commercialCondition;
   const today = dayjs().format("YYYY-MM-DD");
+
+  const handlePaste = async (targetDate: string) => {
+    if (!copySource) return;
+    const result = await executeCopy({
+      sourceDate: new Date(copySource.date),
+      targetDate: new Date(targetDate),
+      clientId: client.id,
+    });
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+    } else {
+      toast.success("Turnos copiados com sucesso");
+      onCancelCopy?.();
+      onRefresh?.();
+    }
+  };
+
+  const handlePasteClick = (targetDate: string, hasShifts: boolean) => {
+    if (hasShifts) {
+      setConfirmPasteDate(targetDate);
+    } else {
+      handlePaste(targetDate);
+    }
+  };
 
   const addressParts = [client.street, client.number].filter(Boolean).join(", ");
   const addressSuffix = [client.complement, client.neighborhood, `${client.city}/${client.uf}`]
@@ -255,16 +303,54 @@ export function MonitoringWeeklyClientCard({
                   const isToday = dateStr === today;
                   const isPast = dateStr < today;
                   const dayData = client.days[dateStr] ?? { planned: [], workShifts: [] };
+                  const isCopySource = copySource?.date === dateStr;
+                  const isCopyTarget = copySource !== null && !isCopySource && !isPast;
 
                   return (
                     <div
                       key={dateStr}
                       className={cn(
-                        "rounded-lg border p-2",
+                        "relative rounded-lg border p-2",
                         isPast && "opacity-40",
                         isToday ? "border-primary/30 bg-primary/5 ring-1 ring-primary/20" : "bg-muted/20",
+                        isCopySource && "border-2 border-primary",
+                        isCopyTarget && "border-2 border-dashed border-primary/50",
                       )}
+                      {...(isCopyTarget && !isCopying
+                        ? {
+                            role: "button",
+                            tabIndex: 0,
+                            onClick: () => handlePasteClick(dateStr, dayData.workShifts.length > 0),
+                            onKeyDown: (e: React.KeyboardEvent) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handlePasteClick(dateStr, dayData.workShifts.length > 0);
+                              }
+                            },
+                          }
+                        : {})}
                     >
+                      {!isPast && !copySource && dayData.workShifts.length > 0 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => onCopy?.(dateStr)}
+                              className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-primary/10 hover:text-primary"
+                            >
+                              <CopyIcon className="size-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Copiar turnos</TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {isCopyTarget && (
+                        <div className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+                          <ClipboardPasteIcon className="size-3.5" />
+                        </div>
+                      )}
+
                       {(() => {
                         const totalPlanned = periods.reduce((sum, period) => {
                           const planning = dayData.planned.find((p) => p.period.toUpperCase() === period);
@@ -346,7 +432,7 @@ export function MonitoringWeeklyClientCard({
                           return items;
                         })}
 
-                        {!isPast && (
+                        {!isPast && !copySource && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
@@ -432,6 +518,28 @@ export function MonitoringWeeklyClientCard({
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={confirmPasteDate !== null} onOpenChange={(open) => !open && setConfirmPasteDate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Colar turnos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este dia já possui turnos. Deseja colar os turnos mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmPasteDate) handlePaste(confirmPasteDate);
+                setConfirmPasteDate(null);
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

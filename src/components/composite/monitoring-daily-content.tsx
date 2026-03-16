@@ -2,7 +2,7 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import { AlertCircleIcon, CalendarIcon } from "lucide-react";
+import { AlertCircleIcon, CalendarIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -156,6 +156,9 @@ export function MonitoringDailyContent({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
+  const copyClientId = searchParams.get("copyClientId") ?? undefined;
+  const copySourceDate = searchParams.get("copySourceDate") ?? undefined;
+
   const updateParams = useCallback(
     (updates: Record<string, string | undefined>) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -170,6 +173,14 @@ export function MonitoringDailyContent({
     },
     [router, pathname, searchParams],
   );
+
+  const handleCopy = (clientId: string) => {
+    updateParams({ copyClientId: clientId, copySourceDate: dateStr });
+  };
+
+  const handleCancelCopy = () => {
+    updateParams({ copyClientId: undefined, copySourceDate: undefined });
+  };
 
   const handleGroupChange = (val: string | null) => {
     updateParams({ group: val || undefined, client: undefined });
@@ -357,7 +368,19 @@ export function MonitoringDailyContent({
         </Alert>
       ) : (
         <div className="space-y-4">
+          {copyClientId && copySourceDate && (
+            <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-primary">
+                Turnos copiados de {dayjs(copySourceDate).format("DD/MM/YYYY")}. Navegue para outra data e cole.
+              </p>
+              <Button variant="ghost" size="sm" onClick={handleCancelCopy}>
+                <XIcon className="mr-1 size-3.5" />
+                Cancelar
+              </Button>
+            </div>
+          )}
           {clients.map((client) => {
+            const isCopyTarget = copyClientId === client.id && copySourceDate !== dateStr;
             return (
               <MonitoringClientCard
                 key={client.id}
@@ -370,6 +393,10 @@ export function MonitoringDailyContent({
                 workShiftSlots={client.workShifts}
                 shiftDate={dateStr}
                 onRefresh={fetchMonitoringData}
+                copySourceDate={copySourceDate}
+                isCopyTarget={isCopyTarget}
+                onCopy={() => handleCopy(client.id)}
+                onCancelCopy={handleCancelCopy}
               />
             );
           })}

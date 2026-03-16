@@ -2,7 +2,7 @@
 
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { AlertCircleIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { AlertCircleIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -140,6 +140,7 @@ export function MonitoringWeeklyContent({
 
   const [clients, setClients] = useState<WeeklyClientData[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copySource, setCopySource] = useState<{ clientId: string; date: string } | null>(null);
 
   const weekStartDate = dayjs(weekStart);
   const weekEndDate = weekStartDate.add(6, "day");
@@ -317,6 +318,17 @@ export function MonitoringWeeklyContent({
         </Alert>
       ) : (
         <div className="space-y-4">
+          {copySource && (
+            <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-primary">
+                Modo cópia ativo. Clique em um dia para colar os turnos.
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setCopySource(null)}>
+                <XIcon className="mr-1 size-3.5" />
+                Cancelar
+              </Button>
+            </div>
+          )}
           {clients.map((client) => (
             <MonitoringWeeklyClientCard
               key={client.id}
@@ -324,6 +336,9 @@ export function MonitoringWeeklyContent({
               weekDays={weekDays}
               dayLabels={DAY_LABELS}
               onRefresh={fetchWeeklyData}
+              copySource={copySource?.clientId === client.id ? copySource : null}
+              onCopy={(date) => setCopySource({ clientId: client.id, date })}
+              onCancelCopy={() => setCopySource(null)}
             />
           ))}
         </div>

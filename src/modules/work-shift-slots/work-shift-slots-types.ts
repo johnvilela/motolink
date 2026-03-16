@@ -68,3 +68,10 @@ export const discountCancelSchema = z.object({
 });
 
 export type DiscountCancelDTO = z.infer<typeof discountCancelSchema>;
+
+export const workShiftSlotCopySchema = z.object({
+  sourceDate: z.coerce.date({ message: "Data de origem é obrigatória" }),
+  targetDate: z.coerce.date({ message: "Data de destino é obrigatória" }),
+  clientId: z.string().uuid({ message: "ID do cliente inválido" }),
+});
+export type WorkShiftSlotCopyDTO = z.infer<typeof workShiftSlotCopySchema>;

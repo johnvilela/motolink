@@ -1,8 +1,11 @@
 "use client";
 
+import dayjs from "dayjs";
 import {
   BanknoteIcon,
+  ClipboardPasteIcon,
   CloudRainIcon,
+  CopyIcon,
   CreditCardIcon,
   MapPinIcon,
   MoonIcon,
@@ -13,14 +16,27 @@ import {
   TruckIcon,
   UtensilsIcon,
 } from "lucide-react";
+import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
+import { toast } from "sonner";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PAYMENT_TYPE_LABELS, PERIOD_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
+import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { MonitoringPlanningRow } from "./monitoring-planning-row";
 import { MonitoringWorkShiftRow } from "./monitoring-work-shift-row";
@@ -110,6 +126,10 @@ interface MonitoringClientCardProps {
   workShiftSlots: WorkShiftSlot[];
   shiftDate: string;
   onRefresh?: () => void;
+  copySourceDate?: string;
+  isCopyTarget?: boolean;
+  onCopy?: () => void;
+  onCancelCopy?: () => void;
 }
 
 const STATUS_SORT_ORDER: Record<string, number> = {
@@ -139,8 +159,40 @@ export function MonitoringClientCard({
   workShiftSlots,
   shiftDate,
   onRefresh,
+  copySourceDate,
+  isCopyTarget,
+  onCopy,
+  onCancelCopy,
 }: MonitoringClientCardProps) {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [confirmPasteOpen, setConfirmPasteOpen] = useState(false);
+
+  const { executeAsync: executeCopy, isExecuting: isCopying } = useAction(copyWorkShiftSlotsAction);
+
+  const handlePaste = async () => {
+    if (!copySourceDate) return;
+    const result = await executeCopy({
+      sourceDate: new Date(copySourceDate),
+      targetDate: new Date(shiftDate),
+      clientId: client.id,
+    });
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+    } else {
+      toast.success("Turnos copiados com sucesso");
+      onCancelCopy?.();
+      onRefresh?.();
+    }
+  };
+
+  const handlePasteClick = () => {
+    if (workShiftSlots.length > 0) {
+      setConfirmPasteOpen(true);
+    } else {
+      handlePaste();
+    }
+  };
+
   const cc = client.commercialCondition;
 
   const addressParts = [client.street, client.number].filter(Boolean).join(", ");
@@ -252,28 +304,51 @@ export function MonitoringClientCard({
               <CardTitle>{client.name}</CardTitle>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{address}</p>
             </div>
-            {periodSummaries.length > 0 && (
-              <div className="flex shrink-0 items-center gap-2">
-                {periodSummaries.map((s) => {
-                  const isDaytime = s.period === planningPeriodConst.DAYTIME;
-                  const Icon = isDaytime ? SunIcon : MoonIcon;
-                  const label = s.plannedCount > 0 ? `${s.filledCount}/${s.plannedCount}` : `${s.filledCount}`;
-                  return (
-                    <span
-                      key={s.period}
-                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${
-                        isDaytime
-                          ? "border-amber-200 bg-amber-50 text-amber-700"
-                          : "border-indigo-200 bg-indigo-50 text-indigo-700"
-                      }`}
-                    >
-                      <Icon className="size-3.5" />
-                      {label}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+            <div className="flex shrink-0 items-center gap-4">
+              {periodSummaries.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {periodSummaries.map((s) => {
+                    const isDaytime = s.period === planningPeriodConst.DAYTIME;
+                    const Icon = isDaytime ? SunIcon : MoonIcon;
+                    const label = s.plannedCount > 0 ? `${s.filledCount}/${s.plannedCount}` : `${s.filledCount}`;
+                    return (
+                      <span
+                        key={s.period}
+                        className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${
+                          isDaytime
+                            ? "border-amber-200 bg-amber-50 text-amber-700"
+                            : "border-indigo-200 bg-indigo-50 text-indigo-700"
+                        }`}
+                      >
+                        <Icon className="size-3.5" />
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {workShiftSlots.length > 0 && !isCopyTarget && onCopy && (
+                <button
+                  type="button"
+                  onClick={onCopy}
+                  className="flex size-8 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
+                  title="Copiar turnos"
+                >
+                  <CopyIcon className="size-4" />
+                </button>
+              )}
+              {isCopyTarget && copySourceDate && (
+                <button
+                  type="button"
+                  onClick={handlePasteClick}
+                  disabled={isCopying}
+                  className="flex size-8 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20"
+                  title={`Colar turnos de ${dayjs(copySourceDate).format("DD/MM")}`}
+                >
+                  <ClipboardPasteIcon className="size-4" />
+                </button>
+              )}
+            </div>
           </div>
           {conditions.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -322,6 +397,28 @@ export function MonitoringClientCard({
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={confirmPasteOpen} onOpenChange={setConfirmPasteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Colar turnos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este dia já possui turnos. Deseja colar os turnos mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                handlePaste();
+                setConfirmPasteOpen(false);
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
