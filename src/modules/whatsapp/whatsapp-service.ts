@@ -45,13 +45,20 @@ export function whatsappService() {
         const chatId = formatPhone(phone);
         const text = MESSAGE_TEMPLATES[type](content);
 
-        const response = await fetch(`${branch.whatsappUrl}/api/sendText`, {
+        const requestBody = {
+          chatId: `${chatId}`,
+          text: text,
+          session: "default",
+        };
+        const url = `${branch.whatsappUrl}/api/sendText`;
+
+        const response = await fetch(url, {
           method: "POST",
           headers: {
-            "X-Api-Key": branch.whatsappApiKey,
             "Content-Type": "application/json",
+            "X-Api-Key": branch.whatsappApiKey || "",
           },
-          body: JSON.stringify({ chatId, text }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {

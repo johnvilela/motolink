@@ -2,7 +2,7 @@
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
-import { AlertCircleIcon, CalendarIcon, XIcon } from "lucide-react";
+import { AlertCircleIcon, CalendarIcon, MoonIcon, SunIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -158,6 +158,7 @@ export function MonitoringDailyContent({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [contractTypeFilter, setContractTypeFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<"all" | "DAYTIME" | "NIGHTTIME">("all");
 
   const copyClientId = searchParams.get("copyClientId") ?? undefined;
   const copySourceDate = searchParams.get("copySourceDate") ?? undefined;
@@ -263,13 +264,16 @@ export function MonitoringDailyContent({
   const resolvedSelectedClientName =
     clientsFilter.options.find((option) => option.value === selectedClientId)?.label ?? selectedClientName;
 
-  const filteredClients =
-    contractTypeFilter === "all"
-      ? clients
-      : clients.map((client) => ({
-          ...client,
-          workShifts: client.workShifts.filter((ws) => ws.contractType === contractTypeFilter),
-        }));
+  const filteredClients = clients.map((client) => ({
+    ...client,
+    workShifts: client.workShifts.filter((ws) => {
+      if (contractTypeFilter !== "all" && ws.contractType !== contractTypeFilter) return false;
+      if (periodFilter !== "all" && !ws.period.some((p) => p.toUpperCase() === periodFilter)) return false;
+      return true;
+    }),
+    planned:
+      periodFilter === "all" ? client.planned : client.planned.filter((p) => p.period.toUpperCase() === periodFilter),
+  }));
 
   const today = dayjs();
   const isToday = selectedDate.isSame(today, "day");
@@ -324,6 +328,28 @@ export function MonitoringDailyContent({
               ))}
             </SelectContent>
           </Select>
+
+          <div className="flex items-center rounded-md border border-border dark:border-input">
+            <Button
+              variant={periodFilter === "DAYTIME" ? "default" : "ghost"}
+              size="icon-sm"
+              className="rounded-r-none"
+              onClick={() => setPeriodFilter((prev) => (prev === "DAYTIME" ? "all" : "DAYTIME"))}
+              title="Diurno"
+            >
+              <SunIcon className="size-4" />
+            </Button>
+            <div className="w-px self-stretch bg-border dark:bg-input" />
+            <Button
+              variant={periodFilter === "NIGHTTIME" ? "default" : "ghost"}
+              size="icon-sm"
+              className="rounded-l-none"
+              onClick={() => setPeriodFilter((prev) => (prev === "NIGHTTIME" ? "all" : "NIGHTTIME"))}
+              title="Noturno"
+            >
+              <MoonIcon className="size-4" />
+            </Button>
+          </div>
         </div>
 
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>

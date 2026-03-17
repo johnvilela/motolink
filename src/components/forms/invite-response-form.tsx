@@ -2,6 +2,7 @@
 
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { CalendarDays, CheckCircle2, Clock, MapPin, User, XCircle } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Text } from "@/components/ui/text";
+import { cn } from "@/lib/cn";
 import { respondToInviteAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 
 dayjs.extend(utc);
@@ -24,6 +26,32 @@ interface InviteResponseFormProps {
   shiftDate: string;
   startTime: string;
   endTime: string;
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+  className,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-border/50 last:border-b-0">
+      <Icon className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="flex flex-1 justify-between gap-2 min-w-0">
+        <Text variant="muted" className="shrink-0">
+          {label}
+        </Text>
+        <Text variant="small" className={cn("text-right", className)}>
+          {value}
+        </Text>
+      </div>
+    </div>
+  );
 }
 
 function InviteResponseForm({
@@ -73,7 +101,12 @@ function InviteResponseForm({
   if (responded) {
     return (
       <Card>
-        <CardContent>
+        <CardContent className="flex flex-col items-center gap-3 py-2">
+          {responded === "ACCEPTED" ? (
+            <CheckCircle2 className="size-10 text-emerald-500" />
+          ) : (
+            <XCircle className="size-10 text-muted-foreground" />
+          )}
           <Text className="text-center" variant="muted">
             {responded === "ACCEPTED"
               ? "Você aceitou a prestação de serviço. Obrigado!"
@@ -112,45 +145,50 @@ function InviteResponseForm({
         <CardHeader>
           <CardTitle>Detalhes da Prestação de Serviço</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <div className="flex justify-between">
-            <Text variant="muted">Prestador</Text>
-            <Text variant="small">{deliverymanName}</Text>
-          </div>
-          <div className="flex justify-between">
-            <Text variant="muted">Cliente</Text>
-            <Text variant="small">{clientName}</Text>
-          </div>
-          <div className="flex justify-between">
-            <Text variant="muted">Local</Text>
-            <Text variant="small" className="text-right max-w-[60%]">
-              {clientAddress}
-            </Text>
-          </div>
-          <div className="flex justify-between">
-            <Text variant="muted">Data</Text>
-            <Text variant="small">{dayjs.utc(shiftDate).format("DD/MM/YYYY")}</Text>
-          </div>
-          <div className="flex justify-between">
-            <Text variant="muted">Horário</Text>
-            <Text variant="small">
-              {dayjs(startTime).format("HH:mm")} - {dayjs(endTime).format("HH:mm")}
-            </Text>
-          </div>
+        <CardContent className="flex flex-col">
+          <DetailRow icon={User} label="Prestador" value={deliverymanName} />
+          <DetailRow icon={User} label="Cliente" value={clientName} />
+          <DetailRow icon={MapPin} label="Local" value={clientAddress} className="max-w-[60%]" />
+          <DetailRow icon={CalendarDays} label="Data" value={dayjs.utc(shiftDate).format("DD/MM/YYYY")} />
+          <DetailRow
+            icon={Clock}
+            label="Horário"
+            value={`${dayjs(startTime).format("HH:mm")} - ${dayjs(endTime).format("HH:mm")}`}
+          />
         </CardContent>
       </Card>
 
-      <div className="flex items-start gap-2">
-        <Checkbox id="agreement" checked={agreed} onCheckedChange={(checked) => setAgreed(checked === true)} />
-        <label htmlFor="agreement" className="text-xs text-muted-foreground leading-tight cursor-pointer">
+      {/* Agreement — large tappable area */}
+      <button
+        type="button"
+        onClick={() => setAgreed((prev) => !prev)}
+        className={cn(
+          "flex items-start gap-3 rounded-xl p-4 text-left transition-all",
+          "border-2 ring-0 outline-none",
+          agreed
+            ? "border-primary bg-primary/5 dark:bg-primary/10"
+            : "border-dashed border-muted-foreground/30 bg-muted/40 hover:border-muted-foreground/50",
+        )}
+      >
+        <Checkbox
+          id="agreement"
+          checked={agreed}
+          onCheckedChange={(checked) => setAgreed(checked === true)}
+          tabIndex={-1}
+          className="mt-0.5 size-5 pointer-events-none"
+          onClick={(e) => e.stopPropagation()}
+        />
+        <span
+          className={cn("text-sm leading-snug transition-colors", agreed ? "text-foreground" : "text-muted-foreground")}
+        >
           Declaro que estou ciente das condições da prestação de serviço e que minha participação é voluntária, sem
           vínculo empregatício.
-        </label>
-      </div>
+        </span>
+      </button>
 
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <Button
-          className="flex-1"
+          className="flex-1 h-11"
           variant="outline"
           disabled={isExecuting}
           isLoading={isExecuting && lastResponse === "REJECTED"}
@@ -159,7 +197,7 @@ function InviteResponseForm({
           Recusar
         </Button>
         <Button
-          className="flex-1"
+          className="flex-1 h-11"
           disabled={!agreed || isExecuting}
           isLoading={isExecuting && lastResponse === "ACCEPTED"}
           onClick={() => handleResponse("ACCEPTED")}
