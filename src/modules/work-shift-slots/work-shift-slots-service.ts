@@ -944,6 +944,59 @@ export function workShiftSlotsService() {
       }
     },
 
+    async getInviteByToken(token: string) {
+      try {
+        const invite = await db.invite.findUnique({
+          where: { token },
+          include: { deliveryman: { select: { name: true } } },
+        });
+
+        if (!invite) {
+          return errAsync({ reason: "Convite não encontrado", statusCode: 404 });
+        }
+
+        return okAsync(invite);
+      } catch (error) {
+        console.error("Error fetching invite by token:", error);
+        return errAsync({ reason: "Não foi possível buscar o convite", statusCode: 500 });
+      }
+    },
+
+    async respondToInvite(token: string, response: "ACCEPTED" | "REJECTED") {
+      try {
+        const invite = await db.invite.findUnique({ where: { token } });
+
+        if (!invite) {
+          return errAsync({ reason: "Convite não encontrado", statusCode: 404 });
+        }
+
+        if (invite.status !== "PENDING") {
+          return errAsync({ reason: "Este convite já foi respondido", statusCode: 400 });
+        }
+
+        if (invite.expiresAt < new Date()) {
+          return errAsync({ reason: "Este convite expirou", statusCode: 400 });
+        }
+
+        await db.$transaction(async (tx) => {
+          await tx.invite.update({
+            where: { token },
+            data: { status: response, respondedAt: new Date() },
+          });
+
+          await tx.workShiftSlot.update({
+            where: { id: invite.workShiftSlotId },
+            data: { status: response === "ACCEPTED" ? "CONFIRMED" : "REJECTED" },
+          });
+        });
+
+        return okAsync(null);
+      } catch (error) {
+        console.error("Error responding to invite:", error);
+        return errAsync({ reason: "Não foi possível responder ao convite", statusCode: 500 });
+      }
+    },
+
     async listDiscountsBySlot(workShiftSlotId: string) {
       try {
         const discounts = await db.discount.findMany({

@@ -88,3 +88,10 @@ export const sendBulkInviteSchema = z.object({
 });
 
 export type SendBulkInviteDTO = z.infer<typeof sendBulkInviteSchema>;
+
+export const respondToInviteSchema = z.object({
+  token: z.string().min(1, { message: "Token é obrigatório" }),
+  response: z.enum(["ACCEPTED", "REJECTED"], { message: "Resposta inválida" }),
+});
+
+export type RespondToInviteDTO = z.infer<typeof respondToInviteSchema>;

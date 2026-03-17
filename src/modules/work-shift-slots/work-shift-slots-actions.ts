@@ -11,6 +11,7 @@ import { workShiftSlotsService } from "./work-shift-slots-service";
 import {
   discountCancelSchema,
   discountMutateSchema,
+  respondToInviteSchema,
   sendBulkInviteSchema,
   sendInviteSchema,
   workShiftSlotCopySchema,
@@ -190,6 +191,16 @@ export const sendInviteAction = safeAction.inputSchema(sendInviteSchema).action(
 
   revalidatePath("/operacional/monitoramento/diario");
   revalidatePath("/operacional/monitoramento/semanal");
+  return { success: true };
+});
+
+export const respondToInviteAction = safeAction.inputSchema(respondToInviteSchema).action(async ({ parsedInput }) => {
+  const result = await workShiftSlotsService().respondToInvite(parsedInput.token, parsedInput.response);
+
+  if (result.isErr()) {
+    return { error: result.error.reason };
+  }
+
   return { success: true };
 });
 
