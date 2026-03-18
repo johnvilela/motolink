@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/cn";
 import { compareMonitoringWorkShifts, countsForMonitoringSummary } from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { Text } from "../ui/text";
 import { MonitoringWorkShiftDetailSheet } from "./monitoring-work-shift-detail-sheet";
@@ -156,8 +157,7 @@ function getInitials(name: string): string {
 }
 
 function formatTime(val: string | null | undefined): string {
-  if (!val) return "";
-  return dayjs(val).format("HH:mm");
+  return formatWorkShiftCheckTime(val, "--:--");
 }
 
 export function MonitoringWeeklyClientCard({

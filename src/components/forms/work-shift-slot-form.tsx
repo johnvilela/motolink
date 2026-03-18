@@ -32,6 +32,7 @@ import { PAYMENT_TYPE_LABELS, PAYMENT_TYPES } from "@/constants/commercial-condi
 import { ContractTypeOptions, contractTypeConst } from "@/constants/contract-type";
 import { PlanningPeriodOptions } from "@/constants/planning-period";
 import { mutateWorkShiftSlotAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { applyMoneyMask, formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { applyTimeMask } from "@/utils/masks/time-mask";
 
@@ -282,8 +283,8 @@ export function WorkShiftSlotForm({
       deliverymenPaymentValue: defaultValues?.deliverymenPaymentValue ?? "",
       period: defaultValues?.period?.map((p) => p.toUpperCase()) ?? (defaultPeriod ? [defaultPeriod] : []),
       contractType: defaultValues?.contractType ?? "",
-      startTime: defaultValues?.startTime ? dayjs(defaultValues.startTime).format("HH:mm") : "",
-      endTime: defaultValues?.endTime ? dayjs(defaultValues.endTime).format("HH:mm") : "",
+      startTime: defaultValues?.startTime ? formatWorkShiftCheckTime(defaultValues.startTime) : "",
+      endTime: defaultValues?.endTime ? formatWorkShiftCheckTime(defaultValues.endTime) : "",
       paymentForm: defaultValues?.paymentForm ?? "",
       isWeekendRate: defaultValues?.isWeekendRate ?? isWeekend,
       additionalTax: defaultValues?.additionalTax ?? 0,

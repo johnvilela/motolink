@@ -125,8 +125,7 @@ function getInitials(name: string): string {
 }
 
 function formatTime(val: string | null | undefined): string {
-  if (!val) return "--:--";
-  return dayjs(val).format("HH:mm");
+  return formatWorkShiftCheckTime(val, "--:--");
 }
 
 function formatCheckTime(val: string | null | undefined): string {
@@ -408,7 +407,7 @@ export function MonitoringWorkShiftDetailSheet({
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Horário real</p>
+                <p className="text-xs text-muted-foreground">Check-in/check-out</p>
                 <p className="text-sm font-medium">
                   {formatCheckTime(slot.checkInAt)} - {formatCheckTime(slot.checkOutAt)}
                 </p>

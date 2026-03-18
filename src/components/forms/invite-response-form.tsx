@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/cn";
 import { respondToInviteAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 
 dayjs.extend(utc);
 
@@ -153,7 +154,7 @@ function InviteResponseForm({
           <DetailRow
             icon={Clock}
             label="Horário"
-            value={`${dayjs(startTime).format("HH:mm")} - ${dayjs(endTime).format("HH:mm")}`}
+            value={`${formatWorkShiftCheckTime(startTime, "--:--")} - ${formatWorkShiftCheckTime(endTime, "--:--")}`}
           />
         </CardContent>
       </Card>

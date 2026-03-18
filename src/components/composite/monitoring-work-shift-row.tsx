@@ -181,10 +181,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const isCurrentShiftDate = shiftDate === dayjs().format("YYYY-MM-DD");
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
 
-  const formatTime = (val: string | null | undefined) => {
-    if (!val) return "";
-    return dayjs(val).format("HH:mm");
-  };
+  const formatTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val, "--:--");
 
   const formatCheckTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val);
 
@@ -281,7 +278,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           <div
             className={cn("shrink-0 text-center text-xs", (isAbsent || isUnanswered || isCancelled) && "opacity-50")}
           >
-            <p className="text-muted-foreground">Real</p>
+            <p className="text-muted-foreground">Check-in/check-out</p>
             <p className="font-medium">
               {isAbsent || isUnanswered || isCancelled
                 ? "--:-- - --:--"
