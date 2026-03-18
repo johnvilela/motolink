@@ -52,6 +52,15 @@ export const WORK_SHIFT_SLOT_STATUS_LABELS: Record<WorkShiftSlotStatus, string> 
   UNANSWERED: "Sem resposta",
 };
 
+export const WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS: Partial<Record<WorkShiftSlotStatus, string>> = {
+  OPEN: "Marcar como convidado",
+  INVITED: "Marcar confirmação",
+  CONFIRMED: "Check in",
+  CHECKED_IN: "Check out",
+  PENDING_COMPLETION: "Concluir turno",
+  REJECTED: "Reabrir turno",
+};
+
 export const WORK_SHIFT_SLOT_STATUS_COLORS: Record<WorkShiftSlotStatus, string> = {
   OPEN: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   INVITED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",

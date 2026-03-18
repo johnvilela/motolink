@@ -17,7 +17,7 @@ import {
   UserXIcon,
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { WorkShiftSlotDiscountForm } from "@/components/forms/work-shift-slot-discount-form";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ContractTypeOptions } from "@/constants/contract-type";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
 import {
+  WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS,
   WORK_SHIFT_SLOT_STATUS_COLORS,
   WORK_SHIFT_SLOT_STATUS_ICONS,
   WORK_SHIFT_SLOT_STATUS_LABELS,
@@ -103,6 +104,15 @@ interface MonitoringWorkShiftRowProps {
   onRefresh?: () => void;
 }
 
+type PendingAction =
+  | "advance-status"
+  | "mark-absent"
+  | "mark-unanswered"
+  | "cancel-shift"
+  | "send-invite"
+  | "toggle-tracking"
+  | "ban-deliveryman";
+
 export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: MonitoringWorkShiftRowProps) {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editTimesSheetOpen, setEditTimesSheetOpen] = useState(false);
@@ -116,11 +126,12 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const [unansweredDialogOpen, setUnansweredDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [inviteConfirmOpen, setInviteConfirmOpen] = useState(false);
-  const { executeAsync, isExecuting } = useAction(updateWorkShiftSlotStatusAction);
-  const { executeAsync: executeBanDeliveryman, isExecuting: isBanningDeliveryman } = useAction(banDeliverymanAction);
-  const { executeAsync: executeSendInvite, isExecuting: isSendingInvite } = useAction(sendInviteAction);
-  const { executeAsync: executeToggleTracking, isExecuting: isTogglingTracking } =
-    useAction(toggleTrackingConnectedAction);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const mutationLockRef = useRef(false);
+  const { executeAsync } = useAction(updateWorkShiftSlotStatusAction);
+  const { executeAsync: executeBanDeliveryman } = useAction(banDeliverymanAction);
+  const { executeAsync: executeSendInvite } = useAction(sendInviteAction);
+  const { executeAsync: executeToggleTracking } = useAction(toggleTrackingConnectedAction);
 
   const status = slot.status as WorkShiftSlotStatus;
   const statusLabel = WORK_SHIFT_SLOT_STATUS_LABELS[status] ?? slot.status;
@@ -128,10 +139,31 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const contractLabel = ContractTypeOptions.find((o) => o.value === slot.contractType)?.label ?? slot.contractType;
   const nextTransitions = workShiftSlotStatusTransitions[status] ?? [];
   const primaryTransition = nextTransitions[0] as WorkShiftSlotStatus | undefined;
+  const primaryActionLabel = primaryTransition
+    ? (WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS[status] ?? WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition])
+    : undefined;
+
+  const isPendingAction = (action: PendingAction) => pendingAction === action;
+  const isMutating = pendingAction !== null;
+
+  const runMutation = async <T,>(action: PendingAction, callback: () => Promise<T>) => {
+    if (mutationLockRef.current) return undefined;
+
+    mutationLockRef.current = true;
+    setPendingAction(action);
+    try {
+      return await callback();
+    } finally {
+      mutationLockRef.current = false;
+      setPendingAction(null);
+    }
+  };
 
   const handleAdvanceStatus = async () => {
     if (!primaryTransition) return;
-    const result = await executeAsync({ id: slot.id, status: primaryTransition });
+    const result = await runMutation("advance-status", () => executeAsync({ id: slot.id, status: primaryTransition }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -141,7 +173,11 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   };
 
   const handleMarkAbsent = async () => {
-    const result = await executeAsync({ id: slot.id, status: "ABSENT", absentReason: absentReason.trim() });
+    const result = await runMutation("mark-absent", () =>
+      executeAsync({ id: slot.id, status: "ABSENT", absentReason: absentReason.trim() }),
+    );
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -152,7 +188,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   };
 
   const handleMarkUnanswered = async () => {
-    const result = await executeAsync({ id: slot.id, status: "UNANSWERED" });
+    const result = await runMutation("mark-unanswered", () => executeAsync({ id: slot.id, status: "UNANSWERED" }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -162,7 +200,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   };
 
   const handleCancelShift = async () => {
-    const result = await executeAsync({ id: slot.id, status: "CANCELLED" });
+    const result = await runMutation("cancel-shift", () => executeAsync({ id: slot.id, status: "CANCELLED" }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -186,7 +226,8 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const formatCheckTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val);
 
   const handleBanDeliveryman = async () => {
-    if (!slot.deliveryman) return;
+    const deliveryman = slot.deliveryman;
+    if (!deliveryman) return;
 
     const reason = banReason.trim();
     if (!reason) {
@@ -194,11 +235,14 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
       return;
     }
 
-    const result = await executeBanDeliveryman({
-      deliverymanId: slot.deliveryman.id,
-      clientId: client.id,
-      reason,
-    });
+    const result = await runMutation("ban-deliveryman", () =>
+      executeBanDeliveryman({
+        deliverymanId: deliveryman.id,
+        clientId: client.id,
+        reason,
+      }),
+    );
+    if (!result) return;
 
     if (result?.data?.error) {
       toast.error(result.data.error);
@@ -303,17 +347,18 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                 <TooltipTrigger asChild>
                   <Button variant="outline" size="sm" onClick={() => setEditSheetOpen(true)}>
                     <SendIcon className="mr-1 size-3.5" />
-                    Convidar
+                    Selecionar entregador
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Selecionar entregador</TooltipContent>
               </Tooltip>
             ) : (
-              primaryTransition && (
+              primaryTransition &&
+              primaryActionLabel && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={handleAdvanceStatus} disabled={isExecuting}>
-                      {isExecuting ? (
+                    <Button variant="outline" size="sm" onClick={handleAdvanceStatus} disabled={isMutating}>
+                      {isPendingAction("advance-status") ? (
                         <Spinner className="mr-1 size-3" />
                       ) : (
                         (() => {
@@ -321,10 +366,10 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                           return <TransitionIcon className="mr-1 size-3.5" />;
                         })()
                       )}
-                      {WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition]}
+                      {primaryActionLabel}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Avançar status</TooltipContent>
+                  <TooltipContent>{primaryActionLabel}</TooltipContent>
                 </Tooltip>
               )
             )}
@@ -336,9 +381,11 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                     variant="ghost"
                     size="icon"
                     className="size-8"
-                    disabled={isTogglingTracking}
+                    disabled={isMutating}
                     onClick={async () => {
-                      const result = await executeToggleTracking({ id: slot.id });
+                      const result = await runMutation("toggle-tracking", () => executeToggleTracking({ id: slot.id }));
+                      if (!result) return;
+
                       if (result?.data?.error) {
                         toast.error(result.data.error);
                       } else {
@@ -347,9 +394,13 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                       }
                     }}
                   >
-                    <SatelliteDishIcon
-                      className={cn("size-4", slot.trackingConnected ? "text-green-600" : "text-muted-foreground")}
-                    />
+                    {isPendingAction("toggle-tracking") ? (
+                      <Spinner className="size-4" />
+                    ) : (
+                      <SatelliteDishIcon
+                        className={cn("size-4", slot.trackingConnected ? "text-green-600" : "text-muted-foreground")}
+                      />
+                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -374,12 +425,12 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                   size="icon"
                   className="size-8"
                   onClick={() => setInviteConfirmOpen(true)}
-                  disabled={!slot.deliveryman || isTerminal || isSendingInvite}
+                  disabled={!slot.deliveryman || isTerminal || isMutating}
                 >
-                  {isSendingInvite ? <Spinner className="size-4" /> : <SendIcon className="size-4" />}
+                  <SendIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Enviar convite</TooltipContent>
+              <TooltipContent>Enviar convite por WhatsApp</TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
@@ -415,7 +466,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                 {nextTransitions.includes("UNANSWERED" as WorkShiftSlotStatus) && (
                   <DropdownMenuItem className="text-gray-600" onClick={() => setUnansweredDialogOpen(true)}>
                     <MessageCircleOffIcon className="mr-2 size-4" />
-                    Sem resposta
+                    Marcar sem resposta
                   </DropdownMenuItem>
                 )}
                 {nextTransitions.includes("ABSENT" as WorkShiftSlotStatus) && (
@@ -427,7 +478,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                 {(status === "OPEN" || status === "INVITED") && (
                   <DropdownMenuItem variant="destructive" onClick={() => setCancelDialogOpen(true)}>
                     <Trash2Icon className="mr-2 size-4" />
-                    Excluir turno
+                    Cancelar turno
                   </DropdownMenuItem>
                 )}
                 {slot.deliveryman && !slot.isDeliverymanBannedForClient && (
@@ -456,7 +507,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
       <AlertDialog open={inviteConfirmOpen} onOpenChange={setInviteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enviar convite</AlertDialogTitle>
+            <AlertDialogTitle>Enviar convite por WhatsApp</AlertDialogTitle>
             <AlertDialogDescription>
               Deseja enviar o convite via WhatsApp para {slot.deliveryman?.name}?
             </AlertDialogDescription>
@@ -465,17 +516,20 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                const result = await executeSendInvite({ workShiftSlotId: slot.id });
+                const result = await runMutation("send-invite", () => executeSendInvite({ workShiftSlotId: slot.id }));
+                if (!result) return;
+
                 if (result?.data?.error) {
                   toast.error(result.data.error);
                 } else {
                   toast.success("Convite enviado com sucesso");
+                  setInviteConfirmOpen(false);
                   onRefresh?.();
                 }
               }}
-              disabled={isSendingInvite}
+              disabled={isMutating}
             >
-              {isSendingInvite ? <Spinner className="mr-1 size-3" /> : null}
+              {isPendingAction("send-invite") ? <Spinner className="mr-1 size-3" /> : null}
               Enviar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -523,7 +577,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             <Button
               variant="destructive"
               className="w-full"
-              disabled={!banReason.trim()}
+              disabled={!banReason.trim() || isMutating}
               onClick={() => setBanConfirmOpen(true)}
             >
               <BanIcon className="mr-1 size-4" />
@@ -546,9 +600,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             <AlertDialogAction
               variant="destructive"
               onClick={handleBanDeliveryman}
-              disabled={isBanningDeliveryman || !banReason.trim()}
+              disabled={isMutating || !banReason.trim()}
             >
-              {isBanningDeliveryman ? <Spinner className="mr-1 size-3" /> : null}
+              {isPendingAction("ban-deliveryman") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar banimento
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -586,8 +640,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             <AlertDialogAction
               variant="destructive"
               onClick={handleMarkAbsent}
-              disabled={!absentReason.trim() || isExecuting}
+              disabled={!absentReason.trim() || isMutating}
             >
+              {isPendingAction("mark-absent") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar ausência
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -605,7 +660,8 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleMarkUnanswered}>
+            <AlertDialogAction variant="destructive" onClick={handleMarkUnanswered} disabled={isMutating}>
+              {isPendingAction("mark-unanswered") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -623,7 +679,8 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleCancelShift}>
+            <AlertDialogAction variant="destructive" onClick={handleCancelShift} disabled={isMutating}>
+              {isPendingAction("cancel-shift") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar cancelamento
             </AlertDialogAction>
           </AlertDialogFooter>

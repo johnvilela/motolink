@@ -12,7 +12,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
 import { WorkShiftSlotTimesForm } from "@/components/forms/work-shift-slot-times-form";
@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ContractTypeOptions } from "@/constants/contract-type";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod } from "@/constants/planning-period";
 import {
+  WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS,
   WORK_SHIFT_SLOT_STATUS_COLORS,
   WORK_SHIFT_SLOT_STATUS_ICONS,
   WORK_SHIFT_SLOT_STATUS_LABELS,
@@ -111,6 +112,15 @@ interface HistoryTrace {
   changes: Record<string, { old: unknown; new: unknown }> | null;
 }
 
+type PendingAction =
+  | "advance-status"
+  | "mark-absent"
+  | "mark-unanswered"
+  | "cancel-shift"
+  | "ban-deliveryman"
+  | "create-discount"
+  | `cancel-discount:${string}`;
+
 const ACTION_LABELS: Record<string, string> = {
   CREATED: "Criado",
   UPDATED: "Atualizado",
@@ -160,9 +170,11 @@ export function MonitoringWorkShiftDetailSheet({
   const [discountFormOpen, setDiscountFormOpen] = useState(false);
   const [discountAmount, setDiscountAmount] = useState("");
   const [discountReason, setDiscountReason] = useState("");
-  const { executeAsync, isExecuting } = useAction(updateWorkShiftSlotStatusAction);
-  const { executeAsync: executeBanDeliveryman, isExecuting: isBanningDeliveryman } = useAction(banDeliverymanAction);
-  const { executeAsync: executeCreateDiscount, isExecuting: isCreatingDiscount } = useAction(createDiscountAction);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const mutationLockRef = useRef(false);
+  const { executeAsync } = useAction(updateWorkShiftSlotStatusAction);
+  const { executeAsync: executeBanDeliveryman } = useAction(banDeliverymanAction);
+  const { executeAsync: executeCreateDiscount } = useAction(createDiscountAction);
   const { executeAsync: executeCancelDiscount } = useAction(cancelDiscountAction);
 
   useEffect(() => {
@@ -183,6 +195,9 @@ export function MonitoringWorkShiftDetailSheet({
   const contractLabel = ContractTypeOptions.find((o) => o.value === slot.contractType)?.label ?? slot.contractType;
   const nextTransitions = workShiftSlotStatusTransitions[status] ?? [];
   const primaryTransition = nextTransitions[0] as WorkShiftSlotStatus | undefined;
+  const primaryActionLabel = primaryTransition
+    ? (WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS[status] ?? WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition])
+    : undefined;
   const periodLabels = slot.period
     .map((p) => PLANNING_PERIOD_LABELS[p.toUpperCase() as PlanningPeriod])
     .filter(Boolean)
@@ -193,10 +208,29 @@ export function MonitoringWorkShiftDetailSheet({
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
   const isCurrentShiftDate = shiftDate === dayjs().format("YYYY-MM-DD");
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
+  const isOpenWithoutDeliveryman = status === "OPEN" && !slot.deliveryman;
+
+  const isPendingAction = (action: PendingAction) => pendingAction === action;
+  const isMutating = pendingAction !== null;
+
+  const runMutation = async <T,>(action: PendingAction, callback: () => Promise<T>) => {
+    if (mutationLockRef.current) return undefined;
+
+    mutationLockRef.current = true;
+    setPendingAction(action);
+    try {
+      return await callback();
+    } finally {
+      mutationLockRef.current = false;
+      setPendingAction(null);
+    }
+  };
 
   const handleAdvanceStatus = async () => {
     if (!primaryTransition) return;
-    const result = await executeAsync({ id: slot.id, status: primaryTransition });
+    const result = await runMutation("advance-status", () => executeAsync({ id: slot.id, status: primaryTransition }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -206,7 +240,11 @@ export function MonitoringWorkShiftDetailSheet({
   };
 
   const handleMarkAbsent = async () => {
-    const result = await executeAsync({ id: slot.id, status: "ABSENT", absentReason: absentReason.trim() });
+    const result = await runMutation("mark-absent", () =>
+      executeAsync({ id: slot.id, status: "ABSENT", absentReason: absentReason.trim() }),
+    );
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -217,7 +255,9 @@ export function MonitoringWorkShiftDetailSheet({
   };
 
   const handleMarkUnanswered = async () => {
-    const result = await executeAsync({ id: slot.id, status: "UNANSWERED" });
+    const result = await runMutation("mark-unanswered", () => executeAsync({ id: slot.id, status: "UNANSWERED" }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -227,7 +267,9 @@ export function MonitoringWorkShiftDetailSheet({
   };
 
   const handleCancelShift = async () => {
-    const result = await executeAsync({ id: slot.id, status: "CANCELLED" });
+    const result = await runMutation("cancel-shift", () => executeAsync({ id: slot.id, status: "CANCELLED" }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -237,7 +279,8 @@ export function MonitoringWorkShiftDetailSheet({
   };
 
   const handleBanDeliveryman = async () => {
-    if (!slot.deliveryman) return;
+    const deliveryman = slot.deliveryman;
+    if (!deliveryman) return;
 
     const reason = banReason.trim();
     if (!reason) {
@@ -245,11 +288,14 @@ export function MonitoringWorkShiftDetailSheet({
       return;
     }
 
-    const result = await executeBanDeliveryman({
-      deliverymanId: slot.deliveryman.id,
-      clientId: client.id,
-      reason,
-    });
+    const result = await runMutation("ban-deliveryman", () =>
+      executeBanDeliveryman({
+        deliverymanId: deliveryman.id,
+        clientId: client.id,
+        reason,
+      }),
+    );
+    if (!result) return;
 
     if (result?.data?.error) {
       toast.error(result.data.error);
@@ -267,7 +313,11 @@ export function MonitoringWorkShiftDetailSheet({
     const amount = Number.parseFloat(discountAmount);
     if (!amount || amount <= 0 || !discountReason.trim()) return;
 
-    const result = await executeCreateDiscount({ workShiftSlotId: slot.id, amount, reason: discountReason.trim() });
+    const result = await runMutation("create-discount", () =>
+      executeCreateDiscount({ workShiftSlotId: slot.id, amount, reason: discountReason.trim() }),
+    );
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -280,7 +330,9 @@ export function MonitoringWorkShiftDetailSheet({
   };
 
   const handleCancelDiscount = async (discountId: string) => {
-    const result = await executeCancelDiscount({ id: discountId });
+    const result = await runMutation(`cancel-discount:${discountId}`, () => executeCancelDiscount({ id: discountId }));
+    if (!result) return;
+
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -477,6 +529,7 @@ export function MonitoringWorkShiftDetailSheet({
                     size="sm"
                     className="h-6 px-2 text-xs"
                     onClick={() => setDiscountFormOpen(true)}
+                    disabled={isMutating}
                   >
                     <PlusIcon className="mr-1 size-3" />
                     Adicionar
@@ -500,13 +553,14 @@ export function MonitoringWorkShiftDetailSheet({
                     onChange={(e) => setDiscountReason(e.target.value)}
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" className="flex-1" onClick={handleCreateDiscount} disabled={isCreatingDiscount}>
-                      {isCreatingDiscount ? <Spinner className="mr-1 size-3" /> : null}
+                    <Button size="sm" className="flex-1" onClick={handleCreateDiscount} disabled={isMutating}>
+                      {isPendingAction("create-discount") ? <Spinner className="mr-1 size-3" /> : null}
                       Salvar
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      disabled={isMutating}
                       onClick={() => {
                         setDiscountFormOpen(false);
                         setDiscountAmount("");
@@ -554,8 +608,12 @@ export function MonitoringWorkShiftDetailSheet({
                             variant="ghost"
                             size="sm"
                             className="h-6 px-1.5 text-xs text-destructive hover:text-destructive"
+                            disabled={isMutating}
                             onClick={() => handleCancelDiscount(discount.id)}
                           >
+                            {isPendingAction(`cancel-discount:${discount.id}`) ? (
+                              <Spinner className="mr-1 size-3" />
+                            ) : null}
                             Cancelar
                           </Button>
                         )}
@@ -620,18 +678,32 @@ export function MonitoringWorkShiftDetailSheet({
           {/* Action footer */}
           <SheetFooter className="border-t px-4 py-3">
             <div className="flex w-full flex-col gap-2">
-              {primaryTransition && (
-                <Button size="sm" onClick={handleAdvanceStatus} disabled={isExecuting} className="w-full">
-                  {isExecuting ? (
-                    <Spinner className="mr-1 size-3" />
-                  ) : (
-                    (() => {
-                      const TransitionIcon = WORK_SHIFT_SLOT_STATUS_ICONS[primaryTransition];
-                      return <TransitionIcon className="mr-1 size-3.5" />;
-                    })()
-                  )}
-                  {WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition]}
+              {isOpenWithoutDeliveryman ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setEditSheetOpen(true)}
+                  disabled={isMutating}
+                >
+                  <PencilIcon className="mr-1 size-3.5" />
+                  Selecionar entregador
                 </Button>
+              ) : (
+                primaryTransition &&
+                primaryActionLabel && (
+                  <Button size="sm" onClick={handleAdvanceStatus} disabled={isMutating} className="w-full">
+                    {isPendingAction("advance-status") ? (
+                      <Spinner className="mr-1 size-3" />
+                    ) : (
+                      (() => {
+                        const TransitionIcon = WORK_SHIFT_SLOT_STATUS_ICONS[primaryTransition];
+                        return <TransitionIcon className="mr-1 size-3.5" />;
+                      })()
+                    )}
+                    {primaryActionLabel}
+                  </Button>
+                )
               )}
               {!isTerminal && !isBannedLocked && (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setEditSheetOpen(true)}>
@@ -651,9 +723,10 @@ export function MonitoringWorkShiftDetailSheet({
                   size="sm"
                   className="w-full text-gray-600"
                   onClick={() => setUnansweredDialogOpen(true)}
+                  disabled={isMutating}
                 >
                   <MessageCircleOffIcon className="mr-1 size-3.5" />
-                  Sem resposta
+                  Marcar sem resposta
                 </Button>
               )}
               {nextTransitions.includes("ABSENT" as WorkShiftSlotStatus) && (
@@ -662,19 +735,32 @@ export function MonitoringWorkShiftDetailSheet({
                   size="sm"
                   className="w-full text-orange-600"
                   onClick={() => setAbsentDialogOpen(true)}
+                  disabled={isMutating}
                 >
                   <UserXIcon className="mr-1 size-3.5" />
                   Marcar ausência
                 </Button>
               )}
               {(status === "OPEN" || status === "INVITED") && (
-                <Button variant="destructive" size="sm" className="w-full" onClick={() => setCancelDialogOpen(true)}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setCancelDialogOpen(true)}
+                  disabled={isMutating}
+                >
                   <Trash2Icon className="mr-1 size-3.5" />
-                  Excluir turno
+                  Cancelar turno
                 </Button>
               )}
               {slot.deliveryman && !slot.isDeliverymanBannedForClient && (
-                <Button variant="destructive" size="sm" className="w-full" onClick={() => setBanSheetOpen(true)}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setBanSheetOpen(true)}
+                  disabled={isMutating}
+                >
                   <BanIcon className="mr-1 size-3.5" />
                   Banir entregador
                 </Button>
@@ -725,7 +811,7 @@ export function MonitoringWorkShiftDetailSheet({
             <Button
               variant="destructive"
               className="w-full"
-              disabled={!banReason.trim()}
+              disabled={!banReason.trim() || isMutating}
               onClick={() => setBanConfirmOpen(true)}
             >
               <BanIcon className="mr-1 size-4" />
@@ -748,9 +834,9 @@ export function MonitoringWorkShiftDetailSheet({
             <AlertDialogAction
               variant="destructive"
               onClick={handleBanDeliveryman}
-              disabled={isBanningDeliveryman || !banReason.trim()}
+              disabled={isMutating || !banReason.trim()}
             >
-              {isBanningDeliveryman ? <Spinner className="mr-1 size-3" /> : null}
+              {isPendingAction("ban-deliveryman") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar banimento
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -842,9 +928,9 @@ export function MonitoringWorkShiftDetailSheet({
             <AlertDialogAction
               variant="destructive"
               onClick={handleMarkAbsent}
-              disabled={!absentReason.trim() || isExecuting}
+              disabled={!absentReason.trim() || isMutating}
             >
-              {isExecuting ? <Spinner className="mr-1 size-3" /> : null}
+              {isPendingAction("mark-absent") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar ausência
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -862,7 +948,8 @@ export function MonitoringWorkShiftDetailSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleMarkUnanswered}>
+            <AlertDialogAction variant="destructive" onClick={handleMarkUnanswered} disabled={isMutating}>
+              {isPendingAction("mark-unanswered") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -880,7 +967,8 @@ export function MonitoringWorkShiftDetailSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleCancelShift}>
+            <AlertDialogAction variant="destructive" onClick={handleCancelShift} disabled={isMutating}>
+              {isPendingAction("cancel-shift") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar cancelamento
             </AlertDialogAction>
           </AlertDialogFooter>
