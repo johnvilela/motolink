@@ -4,9 +4,16 @@ import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 
 export const SAO_PAULO_TIME_ZONE = "America/Sao_Paulo";
+const SAO_PAULO_UTC_OFFSET_HOURS = 3;
 
 const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_STRING_REGEX = /^\d{2}:\d{2}(:\d{2})?$/;
+const saoPauloTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: SAO_PAULO_TIME_ZONE,
+});
 
 function getDateTimePartsInTimeZone(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -84,7 +91,10 @@ export function normalizeTimeString(value: string): string {
 
 export function timeStringToDbTime(time: string): Date {
   const normalized = normalizeTimeString(time);
-  return dayjs.utc(`1970-01-01T${normalized}:00Z`).toDate();
+  const [hours, minutes] = normalized.split(":").map(Number);
+  const utcHours = (hours + SAO_PAULO_UTC_OFFSET_HOURS) % 24;
+
+  return dayjs.utc("1970-01-01T00:00:00Z").hour(utcHours).minute(minutes).second(0).millisecond(0).toDate();
 }
 
 export function dbTimeToTimeString(value: string | Date | null | undefined, fallback = ""): string {
@@ -96,12 +106,12 @@ export function dbTimeToTimeString(value: string | Date | null | undefined, fall
     return normalizeTimeString(rawValue);
   }
 
-  const parsedTime = dayjs.utc(rawValue);
-  if (!parsedTime.isValid()) {
+  const parsedTime = new Date(rawValue);
+  if (Number.isNaN(parsedTime.getTime())) {
     return fallback || rawValue;
   }
 
-  return parsedTime.format("HH:mm");
+  return saoPauloTimeFormatter.format(parsedTime);
 }
 
 export function getCurrentDateKeyInTimeZone(timeZone: string): string {
