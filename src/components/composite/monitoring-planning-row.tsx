@@ -28,15 +28,20 @@ export function MonitoringPlanningRow({
 
   return (
     <>
-      <div className="flex items-center justify-between rounded-md border-l-4 border-l-yellow-400 bg-muted/50 px-4 py-3">
-        <div>
-          <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Vago</p>
-          <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between rounded-md border-l-4 border-l-yellow-400 bg-gradient-to-r from-amber-50 via-yellow-50/90 to-white px-4 py-3 dark:border-yellow-900/60 dark:from-yellow-950/35 dark:via-amber-950/20 dark:to-background">
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-amber-800 dark:text-yellow-200">Vago</p>
+          <p className="inline-flex items-center gap-1 text-xs text-amber-700/80 dark:text-yellow-200/75">
             {period === planningPeriodConst.DAYTIME ? <SunIcon className="size-3" /> : <MoonIcon className="size-3" />}
             {periodLabel}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-yellow-200 bg-white/90 text-amber-800 shadow-sm hover:bg-yellow-100 hover:text-amber-900 dark:border-yellow-900/70 dark:bg-yellow-950/20 dark:text-yellow-100 dark:hover:bg-yellow-950/40"
+          onClick={() => setSheetOpen(true)}
+        >
           <PlusIcon className="mr-1 size-3.5" />
           Adicionar entregador
         </Button>

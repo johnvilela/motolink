@@ -222,8 +222,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
   const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
+  const dimmedInfoClassName = isCancelled ? "opacity-50" : undefined;
   const rowStatusColor = isOpenWithoutDeliveryman
-    ? "bg-red-100 text-red-700 ring-1 dark:bg-red-950/50 dark:text-red-200"
+    ? "bg-red-100 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-900/70"
     : statusColor;
 
   const formatTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val, "--:--");
@@ -278,6 +279,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           <div
             className={cn(
               "min-w-80 lg:border-r lg:pr-4",
+              dimmedInfoClassName,
               isOpenWithoutDeliveryman ? "lg:border-red-200/80 dark:lg:border-red-900/60" : "lg:border-gray-200",
             )}
           >
@@ -341,7 +343,8 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           <div
             className={cn(
               "shrink-0 text-center text-xs",
-              (isAbsent || isUnanswered || isCancelled) && "opacity-50",
+              (isAbsent || isUnanswered) && "opacity-50",
+              dimmedInfoClassName,
               isOpenWithoutDeliveryman && "text-red-900 dark:text-red-100",
             )}
           >
@@ -361,7 +364,8 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           <div
             className={cn(
               "shrink-0 text-center text-xs",
-              (isAbsent || isUnanswered || isCancelled) && "opacity-50",
+              (isAbsent || isUnanswered) && "opacity-50",
+              dimmedInfoClassName,
               isOpenWithoutDeliveryman && "text-red-900 dark:text-red-100",
             )}
           >
@@ -382,7 +386,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
 
           <span
             className={cn(
-              "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium",
+              "inline-flex shrink-0 items-center rounded-full px-2 py-1 text-sm font-medium",
               rowStatusColor,
             )}
           >
