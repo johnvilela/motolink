@@ -1,19 +1,11 @@
 "use client";
 
 import dayjs from "dayjs";
-import {
-  BanIcon,
-  ClockIcon,
-  MessageCircleOffIcon,
-  PencilIcon,
-  PlusIcon,
-  Trash2Icon,
-  UserXIcon,
-  XIcon,
-} from "lucide-react";
+import { BanIcon, ClockIcon, PencilIcon, PlusIcon, Trash2Icon, UserXIcon, XIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { EndShiftDialog, getEndShiftOptions } from "@/components/composite/end-shift-dialog";
 import { WorkShiftSlotForm } from "@/components/forms/work-shift-slot-form";
 import { WorkShiftSlotTimesForm } from "@/components/forms/work-shift-slot-times-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -116,8 +108,7 @@ interface HistoryTrace {
 type PendingAction =
   | "advance-status"
   | "mark-absent"
-  | "mark-unanswered"
-  | "cancel-shift"
+  | "end-shift"
   | "ban-deliveryman"
   | "create-discount"
   | `cancel-discount:${string}`;
@@ -164,8 +155,7 @@ export function MonitoringWorkShiftDetailSheet({
   const [banReason, setBanReason] = useState("");
   const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
   const [absentReason, setAbsentReason] = useState("");
-  const [unansweredDialogOpen, setUnansweredDialogOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [endShiftDialogOpen, setEndShiftDialogOpen] = useState(false);
   const [traces, setTraces] = useState<HistoryTrace[]>([]);
   const [tracesLoading, setTracesLoading] = useState(false);
   const [discountFormOpen, setDiscountFormOpen] = useState(false);
@@ -195,6 +185,7 @@ export function MonitoringWorkShiftDetailSheet({
   const statusColor = WORK_SHIFT_SLOT_STATUS_COLORS[status] ?? "bg-gray-100 text-gray-800";
   const contractLabel = ContractTypeOptions.find((o) => o.value === slot.contractType)?.label ?? slot.contractType;
   const nextTransitions = workShiftSlotStatusTransitions[status] ?? [];
+  const endShiftOptions = getEndShiftOptions(status);
   const primaryTransition = nextTransitions[0] as WorkShiftSlotStatus | undefined;
   const primaryActionLabel = primaryTransition
     ? (WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS[status] ?? WORK_SHIFT_SLOT_STATUS_LABELS[primaryTransition])
@@ -255,26 +246,15 @@ export function MonitoringWorkShiftDetailSheet({
     }
   };
 
-  const handleMarkUnanswered = async () => {
-    const result = await runMutation("mark-unanswered", () => executeAsync({ id: slot.id, status: "UNANSWERED" }));
+  const handleEndShift = async (status: string, cancelledReason?: string) => {
+    const result = await runMutation("end-shift", () => executeAsync({ id: slot.id, status, cancelledReason }));
     if (!result) return;
 
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
-      toast.success(`Status atualizado para ${WORK_SHIFT_SLOT_STATUS_LABELS.UNANSWERED}`);
-      onRefresh?.();
-    }
-  };
-
-  const handleCancelShift = async () => {
-    const result = await runMutation("cancel-shift", () => executeAsync({ id: slot.id, status: "CANCELLED" }));
-    if (!result) return;
-
-    if (result?.data?.error) {
-      toast.error(result.data.error);
-    } else {
-      toast.success(`Status atualizado para ${WORK_SHIFT_SLOT_STATUS_LABELS.CANCELLED}`);
+      toast.success(`Status atualizado para ${WORK_SHIFT_SLOT_STATUS_LABELS[status as WorkShiftSlotStatus]}`);
+      setEndShiftDialogOpen(false);
       onRefresh?.();
     }
   };
@@ -718,18 +698,6 @@ export function MonitoringWorkShiftDetailSheet({
                   Editar horários
                 </Button>
               )}
-              {nextTransitions.includes("UNANSWERED" as WorkShiftSlotStatus) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-gray-600"
-                  onClick={() => setUnansweredDialogOpen(true)}
-                  disabled={isMutating}
-                >
-                  <MessageCircleOffIcon className="mr-1 size-3.5" />
-                  Marcar sem resposta
-                </Button>
-              )}
               {nextTransitions.includes("ABSENT" as WorkShiftSlotStatus) && (
                 <Button
                   variant="outline"
@@ -742,12 +710,12 @@ export function MonitoringWorkShiftDetailSheet({
                   Marcar ausência
                 </Button>
               )}
-              {(status === "OPEN" || status === "INVITED") && (
+              {endShiftOptions.length > 0 && (
                 <Button
                   variant="destructive"
                   size="sm"
                   className="w-full"
-                  onClick={() => setCancelDialogOpen(true)}
+                  onClick={() => setEndShiftDialogOpen(true)}
                   disabled={isMutating}
                 >
                   <Trash2Icon className="mr-1 size-3.5" />
@@ -938,43 +906,15 @@ export function MonitoringWorkShiftDetailSheet({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Unanswered confirmation dialog */}
-      <AlertDialog open={unansweredDialogOpen} onOpenChange={setUnansweredDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Marcar sem resposta</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja marcar este entregador como sem resposta? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleMarkUnanswered} disabled={isMutating}>
-              {isPendingAction("mark-unanswered") ? <Spinner className="mr-1 size-3" /> : null}
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Cancel shift confirmation dialog */}
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar turno</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja cancelar este turno? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleCancelShift} disabled={isMutating}>
-              {isPendingAction("cancel-shift") ? <Spinner className="mr-1 size-3" /> : null}
-              Confirmar cancelamento
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* End shift dialog (cancel / unanswered / rejected) */}
+      <EndShiftDialog
+        open={endShiftDialogOpen}
+        onOpenChange={setEndShiftDialogOpen}
+        currentStatus={status}
+        isMutating={isMutating}
+        isPending={isPendingAction("end-shift")}
+        onConfirm={handleEndShift}
+      />
     </>
   );
 }

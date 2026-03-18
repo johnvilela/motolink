@@ -263,6 +263,7 @@ model WorkShiftSlot {
   deliverymanPerDeliveryNight Decimal          @default(0) @db.Decimal(16, 2)
   isWeekendRate               Boolean          @default(false)
   totalValueToPay             Decimal          @default(0) @db.Decimal(16, 2)
+  cancelledReason             String?
   updatedAt                   DateTime         @updatedAt
   createdAt                   DateTime         @default(now())
   paymentRequests             PaymentRequest[]

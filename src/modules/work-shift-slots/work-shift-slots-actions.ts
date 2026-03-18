@@ -26,6 +26,7 @@ const updateStatusInputSchema = z.object({
   id: z.string().uuid({ message: "ID do turno inválido" }),
   status: z.string().min(1, { message: "Status é obrigatório" }),
   absentReason: z.string().optional(),
+  cancelledReason: z.string().optional(),
 });
 
 const mutateInputSchema = workShiftSlotMutateSchema.extend({
@@ -46,11 +47,16 @@ export const updateWorkShiftSlotStatusAction = safeAction
       return { error: "Motivo da ausência é obrigatório" };
     }
 
+    if (parsedInput.status === "CANCELLED" && !parsedInput.cancelledReason?.trim()) {
+      return { error: "Motivo do cancelamento é obrigatório" };
+    }
+
     const result = await workShiftSlotsService().updateStatus(
       parsedInput.id,
       parsedInput.status,
       loggedUserId,
       parsedInput.absentReason,
+      parsedInput.cancelledReason,
     );
 
     if (result.isErr()) {

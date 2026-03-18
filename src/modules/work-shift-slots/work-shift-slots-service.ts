@@ -404,7 +404,13 @@ export function workShiftSlotsService() {
       }
     },
 
-    async updateStatus(id: string, status: string, loggedUserId: string, absentReason?: string) {
+    async updateStatus(
+      id: string,
+      status: string,
+      loggedUserId: string,
+      absentReason?: string,
+      cancelledReason?: string,
+    ) {
       try {
         const include = {
           client: { select: { id: true, name: true } },
@@ -431,6 +437,10 @@ export function workShiftSlotsService() {
 
         if (status === "ABSENT") {
           data.absentReason = absentReason;
+        }
+
+        if (status === "CANCELLED") {
+          data.cancelledReason = cancelledReason;
         }
 
         if (status === "CHECKED_IN" && !existing.checkInAt) {
