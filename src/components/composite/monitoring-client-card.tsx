@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
+import { BAGS_STATUS_OPTIONS } from "@/constants/bags-status";
 import { PAYMENT_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
 import {
@@ -152,6 +153,11 @@ function isNonEmpty(val: unknown): boolean {
   return Boolean(val);
 }
 
+function getBagsStatusLabel(status?: string): string {
+  if (!status) return "Sem informação";
+  return BAGS_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+}
+
 export function MonitoringClientCard({
   client,
   plannings,
@@ -223,10 +229,13 @@ export function MonitoringClientCard({
   const address = [addressParts, addressSuffix].filter(Boolean).join(" - ");
 
   const conditions: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [];
-  if (client.provideMeal) conditions.push({ icon: UtensilsIcon, label: "Fornece refeição" });
+  conditions.push({ icon: UtensilsIcon, label: `Refeição: ${client.provideMeal ? "Sim" : "Não"}` });
   if (cc) {
-    if (isNonEmpty(cc.bagsAllocated))
-      conditions.push({ icon: PackageIcon, label: `Bags: ${cc.bagsAllocated} (${cc.bagsStatus})` });
+    if (isNonEmpty(cc.bagsAllocated) || isNonEmpty(cc.bagsStatus))
+      conditions.push({
+        icon: PackageIcon,
+        label: `Bags: ${cc.bagsAllocated ?? 0} (${getBagsStatusLabel(cc.bagsStatus)})`,
+      });
     if (isNonEmpty(cc.deliveryAreaKm))
       conditions.push({ icon: MapPinIcon, label: `Área de entrega: ${cc.deliveryAreaKm} km` });
     if (cc.isMotolinkCovered) conditions.push({ icon: ShieldCheckIcon, label: "Cobertura Motolink" });
@@ -247,6 +256,10 @@ export function MonitoringClientCard({
         icon: TruckIcon,
         label: `Diária entregador: ${formatMoneyDisplay(cc.deliverymanDailyDay)}`,
       });
+    conditions.push({
+      icon: BanknoteIcon,
+      label: `Cliente por km adicional: ${formatMoneyDisplay(cc.clientAdditionalKm ?? 0)}`,
+    });
   }
 
   const periods: PlanningPeriod[] = [planningPeriodConst.DAYTIME, planningPeriodConst.NIGHTTIME];

@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BAGS_STATUS_OPTIONS } from "@/constants/bags-status";
 import { PAYMENT_TYPE_LABELS, PERIOD_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
 import {
@@ -155,6 +156,11 @@ function isNonEmpty(val: unknown): boolean {
   return Boolean(val);
 }
 
+function getBagsStatusLabel(status?: string): string {
+  if (!status) return "Sem informação";
+  return BAGS_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+}
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
@@ -222,10 +228,13 @@ export function MonitoringWeeklyClientCard({
   const address = [addressParts, addressSuffix].filter(Boolean).join(" - ");
 
   const conditions: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [];
-  if (client.provideMeal) conditions.push({ icon: UtensilsIcon, label: "Fornece refeição" });
+  conditions.push({ icon: UtensilsIcon, label: `Refeição: ${client.provideMeal ? "Sim" : "Não"}` });
   if (cc) {
-    if (isNonEmpty(cc.bagsAllocated))
-      conditions.push({ icon: PackageIcon, label: `Bags: ${cc.bagsAllocated} (${cc.bagsStatus})` });
+    if (isNonEmpty(cc.bagsAllocated) || isNonEmpty(cc.bagsStatus))
+      conditions.push({
+        icon: PackageIcon,
+        label: `Bags: ${cc.bagsAllocated ?? 0} (${getBagsStatusLabel(cc.bagsStatus)})`,
+      });
     if (isNonEmpty(cc.deliveryAreaKm))
       conditions.push({ icon: MapPinIcon, label: `Área de entrega: ${cc.deliveryAreaKm} km` });
     if (cc.isMotolinkCovered) conditions.push({ icon: ShieldCheckIcon, label: "Cobertura Motolink" });
@@ -256,6 +265,10 @@ export function MonitoringWeeklyClientCard({
         icon: TruckIcon,
         label: `Diária: Cliente ${formatMoneyDisplay(cc.clientDailyDay)} / Entregador ${formatMoneyDisplay(cc.deliverymanDailyDay)}`,
       });
+    conditions.push({
+      icon: BanknoteIcon,
+      label: `Cliente por km adicional: ${formatMoneyDisplay(cc.clientAdditionalKm ?? 0)}`,
+    });
   }
 
   const periods: PlanningPeriod[] = [planningPeriodConst.DAYTIME, planningPeriodConst.NIGHTTIME];
