@@ -5,7 +5,7 @@ import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { TablePagination } from "@/components/composite/table-pagination";
 import { TextSearch } from "@/components/composite/text-search";
-import { DeliverymenTable } from "@/components/tables/deliverymen-table";
+import { DeliverymenList } from "@/components/lists/deliverymen-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
@@ -57,7 +57,7 @@ export default async function EntregadoresPage({ searchParams }: EntregadoresPag
               <Link href="/gestao/entregadores/novo">Adicionar entregador</Link>
             </Button>
           </div>
-          <DeliverymenTable deliverymen={result.value.data} />
+          <DeliverymenList deliverymen={result.value.data} />
           <TablePagination
             page={result.value.pagination.page}
             pageSize={result.value.pagination.pageSize}

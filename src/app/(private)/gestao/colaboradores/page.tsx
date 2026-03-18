@@ -6,7 +6,7 @@ import { ContentHeader } from "@/components/composite/content-header";
 import { SelectSearch } from "@/components/composite/select-search";
 import { TablePagination } from "@/components/composite/table-pagination";
 import { TextSearch } from "@/components/composite/text-search";
-import { UsersTable } from "@/components/tables/users-table";
+import { UsersList } from "@/components/lists/users-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
@@ -35,6 +35,15 @@ export default async function ColaboradoresPage({ searchParams }: ColaboradoresP
 
   const cookieStore = await cookies();
   const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
+  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+  let isAdmin = false;
+  if (loggedUserId) {
+    const loggedUserResult = await usersService().getById(loggedUserId);
+    if (loggedUserResult.isOk() && loggedUserResult.value) {
+      isAdmin = loggedUserResult.value.role === "ADMIN";
+    }
+  }
 
   const params = await searchParams;
   const page = Number(params?.page) || 1;
@@ -72,7 +81,7 @@ export default async function ColaboradoresPage({ searchParams }: ColaboradoresP
               <Link href="/gestao/colaboradores/novo">Adicionar colaborador</Link>
             </Button>
           </div>
-          <UsersTable users={result.value.data} />
+          <UsersList users={result.value.data} isAdmin={isAdmin} />
           <TablePagination
             page={result.value.pagination.page}
             pageSize={result.value.pagination.pageSize}

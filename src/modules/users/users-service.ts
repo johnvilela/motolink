@@ -282,6 +282,44 @@ export function usersService() {
       }
     },
 
+    async toggleBlock(id: string, loggedUserId: string) {
+      try {
+        const existing = await db.user.findUnique({ where: { id, isDeleted: false }, omit: { password: true } });
+
+        if (!existing) {
+          return errAsync({ reason: "Usuário não encontrado", statusCode: 404 });
+        }
+
+        const newStatus = existing.status === statusConst.BLOCKED ? statusConst.ACTIVE : statusConst.BLOCKED;
+
+        const updated = await db.user.update({
+          where: { id },
+          data: { status: newStatus },
+          omit: { password: true },
+        });
+
+        if (newStatus === statusConst.BLOCKED) {
+          await db.session.deleteMany({ where: { userId: id } });
+        }
+
+        historyTracesService()
+          .create({
+            userId: loggedUserId,
+            action: historyTraceActionConst.UPDATED,
+            entityType: historyTraceEntityConst.USER,
+            entityId: id,
+            oldObject: existing,
+            newObject: updated,
+          })
+          .catch(() => {});
+
+        return okAsync(updated);
+      } catch (error) {
+        console.error("Error toggling user block status:", error);
+        return errAsync({ reason: "Não foi possível alterar o bloqueio do usuário", statusCode: 500 });
+      }
+    },
+
     async delete(id: string, loggedUserId: string) {
       try {
         const existingUser = await db.user.findUnique({

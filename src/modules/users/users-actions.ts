@@ -90,6 +90,25 @@ export const changePasswordAction = safeAction.inputSchema(changePasswordSchema)
   return { success: true };
 });
 
+export async function toggleBlockUserAction(id: string) {
+  const cookieStore = await cookies();
+  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+  if (!loggedUserId) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const result = await usersService().toggleBlock(id, loggedUserId);
+
+  if (result.isErr()) {
+    return { error: result.error.reason };
+  }
+
+  revalidatePath("/gestao/colaboradores");
+  revalidatePath(`/gestao/colaboradores/${id}`);
+  return { success: true, isBlocked: result.value.status === "BLOCKED" };
+}
+
 export async function deleteUserAction(id: string) {
   const cookieStore = await cookies();
   const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
