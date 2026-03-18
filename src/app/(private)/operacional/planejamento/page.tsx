@@ -13,6 +13,7 @@ import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { planningService } from "@/modules/planning/planning-service";
 import { checkPagePermission } from "@/utils/check-page-permission";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 
 dayjs.extend(isoWeek);
 
@@ -43,8 +44,9 @@ export default async function PlanejamentoPage({ searchParams }: PlanejamentoPag
   }
 
   const params = await searchParams;
-  const requestedWeek = params.week ? dayjs(params.week) : dayjs();
-  const weekReference = requestedWeek.isValid() ? requestedWeek : dayjs();
+  const today = getCurrentDateKeyInSaoPaulo();
+  const requestedWeek = params.week ? dayjs(params.week) : dayjs(today);
+  const weekReference = requestedWeek.isValid() ? requestedWeek : dayjs(today);
   const weekStart = weekReference.startOf("isoWeek");
   const weekStartDate = weekStart.format("YYYY-MM-DD");
   const weekEndDate = weekStart.add(6, "day").format("YYYY-MM-DD");

@@ -1,6 +1,4 @@
 "use client";
-
-import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +11,7 @@ import {
 } from "@/constants/payment-request-status";
 import { cn } from "@/lib/cn";
 import { formatTraceChanges } from "@/modules/history-traces/history-traces-formatter";
+import { formatDbDate } from "@/utils/date-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 
 interface PaymentRequestDetail {
@@ -84,7 +83,7 @@ export function PaymentRequestDetailSheet({ item, open, onOpenChange }: PaymentR
             <div>
               <p className="font-medium">{item.deliveryman?.name ?? "—"}</p>
               <p className="text-sm text-muted-foreground">
-                {item.workShiftSlot?.shiftDate ? dayjs(item.workShiftSlot.shiftDate).format("DD/MM/YYYY") : "—"}
+                {item.workShiftSlot?.shiftDate ? formatDbDate(item.workShiftSlot.shiftDate, "—") : "—"}
               </p>
             </div>
             <span
@@ -154,7 +153,15 @@ export function PaymentRequestDetailSheet({ item, open, onOpenChange }: PaymentR
                   return (
                     <div key={trace.id} className="relative">
                       <div className="absolute -left-4 top-1.5 size-2 rounded-full bg-muted-foreground/40" />
-                      <p className="text-xs text-muted-foreground">{dayjs(trace.createdAt).format("DD/MM HH:mm")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Intl.DateTimeFormat("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        }).format(new Date(trace.createdAt))}
+                      </p>
                       <p className="text-sm">
                         <span className="font-medium">{ACTION_LABELS[trace.action] ?? trace.action}</span>
                         {userName && <span className="text-muted-foreground"> por {userName}</span>}

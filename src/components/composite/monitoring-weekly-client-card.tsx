@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/cn";
 import { compareMonitoringWorkShifts, countsForMonitoringSummary } from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { Text } from "../ui/text";
@@ -177,13 +178,13 @@ export function MonitoringWeeklyClientCard({
   const { executeAsync: executeCopy, isExecuting: isCopying } = useAction(copyWorkShiftSlotsAction);
 
   const cc = client.commercialCondition;
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = getCurrentDateKeyInSaoPaulo();
 
   const handlePaste = async (targetDate: string) => {
     if (!copySource) return;
     const result = await executeCopy({
-      sourceDate: new Date(copySource.date),
-      targetDate: new Date(targetDate),
+      sourceDate: copySource.date,
+      targetDate,
       clientId: client.id,
     });
     if (result?.data?.error) {

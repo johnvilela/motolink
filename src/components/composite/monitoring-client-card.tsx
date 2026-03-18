@@ -164,7 +164,7 @@ export function MonitoringClientCard({
   const hasInvitedSlots = workShiftSlots.some((s) => s.status === "INVITED" && s.deliveryman);
 
   const handleBulkInvite = async () => {
-    const result = await executeBulkInvite({ clientId: client.id, shiftDate: new Date(shiftDate) });
+    const result = await executeBulkInvite({ clientId: client.id, shiftDate });
     if (result?.data?.error) {
       toast.error(result.data.error);
     } else {
@@ -177,8 +177,8 @@ export function MonitoringClientCard({
   const handlePaste = async () => {
     if (!copySourceDate) return;
     const result = await executeCopy({
-      sourceDate: new Date(copySourceDate),
-      targetDate: new Date(shiftDate),
+      sourceDate: copySourceDate,
+      targetDate: shiftDate,
       clientId: client.id,
     });
     if (result?.data?.error) {

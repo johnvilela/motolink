@@ -430,13 +430,6 @@ export function WorkShiftSlotForm({
   function onSubmit(data: FormValues) {
     setServerError(null);
 
-    const shiftDateObj = dayjs(shiftDate);
-    const startTimeParts = data.startTime.split(":");
-    const endTimeParts = data.endTime.split(":");
-
-    const startTimeDate = shiftDateObj.hour(Number(startTimeParts[0])).minute(Number(startTimeParts[1])).second(0);
-    const endTimeDate = shiftDateObj.hour(Number(endTimeParts[0])).minute(Number(endTimeParts[1])).second(0);
-
     const hasDaytime = data.period.some((p) => p.toUpperCase() === "DAYTIME");
     const hasNighttime = data.period.some((p) => p.toUpperCase() === "NIGHTTIME");
 
@@ -474,9 +467,9 @@ export function WorkShiftSlotForm({
       deliverymanId: data.deliverymanId || undefined,
       status,
       contractType: data.contractType,
-      shiftDate: shiftDateObj.toDate(),
-      startTime: startTimeDate.toDate(),
-      endTime: endTimeDate.toDate(),
+      shiftDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
       period: data.period.map((p) => p.toLowerCase()),
       auditStatus: "PENDING",
       isFreelancer: data.contractType === contractTypeConst.FREELANCER,

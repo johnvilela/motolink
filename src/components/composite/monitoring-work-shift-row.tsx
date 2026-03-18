@@ -1,6 +1,5 @@
 "use client";
 
-import dayjs from "dayjs";
 import {
   BanIcon,
   ClockIcon,
@@ -61,6 +60,7 @@ import {
   toggleTrackingConnectedAction,
   updateWorkShiftSlotStatusAction,
 } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { MonitoringWorkShiftDetailSheet } from "./monitoring-work-shift-detail-sheet";
@@ -231,7 +231,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const isCancelled = status === "CANCELLED";
   const isOpenWithoutDeliveryman = status === "OPEN" && !slot.deliveryman;
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
-  const isCurrentShiftDate = shiftDate === dayjs().format("YYYY-MM-DD");
+  const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
 
   const formatTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val, "--:--");

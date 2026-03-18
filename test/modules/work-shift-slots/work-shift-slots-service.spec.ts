@@ -8,6 +8,7 @@ import { historyTraceActionConst, historyTraceEntityConst } from "../../../src/c
 import { db } from "../../../src/lib/database";
 import { workShiftSlotsService } from "../../../src/modules/work-shift-slots/work-shift-slots-service";
 import type { WorkShiftSlotMutateDTO } from "../../../src/modules/work-shift-slots/work-shift-slots-types";
+import { dateKeyToDbDate, dbDateToDateKey, timeStringToDbTime } from "../../../src/utils/date-time";
 import { cleanDatabase } from "../../helpers/clean-database";
 
 dayjs.extend(utc);
@@ -16,17 +17,21 @@ dayjs.extend(utc);
 
 const LOGGED_USER_ID = crypto.randomUUID();
 
-const SHIFT_DATE = new Date("2099-06-15");
-const START_TIME = new Date("2099-06-15T08:00:00Z");
-const END_TIME = new Date("2099-06-15T18:00:00Z");
+const SHIFT_DATE_KEY = "2099-06-15";
+const START_TIME_KEY = "08:00";
+const END_TIME_KEY = "18:00";
+
+const SHIFT_DATE = dateKeyToDbDate(SHIFT_DATE_KEY);
+const START_TIME = timeStringToDbTime(START_TIME_KEY);
+const END_TIME = timeStringToDbTime(END_TIME_KEY);
 
 const BASE_BODY: WorkShiftSlotMutateDTO = {
   clientId: crypto.randomUUID(), // will be overridden in tests
   status: "OPEN",
   contractType: "CLT",
-  shiftDate: SHIFT_DATE,
-  startTime: START_TIME,
-  endTime: END_TIME,
+  shiftDate: SHIFT_DATE_KEY,
+  startTime: START_TIME_KEY,
+  endTime: END_TIME_KEY,
   period: ["daytime"],
   auditStatus: "PENDING",
   isFreelancer: false,
@@ -286,10 +291,10 @@ describe("Work Shift Slots Service", () => {
 
       it("should filter by shiftDate", async () => {
         const client = await createTestClient();
-        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-06-15") });
-        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: new Date("2099-07-20") });
+        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: dateKeyToDbDate("2099-06-15") });
+        await createTestWorkShiftSlot({ clientId: client.id, shiftDate: dateKeyToDbDate("2099-07-20") });
 
-        const result = await service.listAll({ page: 1, pageSize: 10, shiftDate: new Date("2099-06-15") });
+        const result = await service.listAll({ page: 1, pageSize: 10, shiftDate: "2099-06-15" });
 
         expect(result.isOk()).toBe(true);
         const { data } = result._unsafeUnwrap();
@@ -321,8 +326,8 @@ describe("Work Shift Slots Service", () => {
         clientId: client.id,
         deliverymanId: deliveryman.id,
         shiftDate: SHIFT_DATE,
-        startTime: new Date("2099-06-15T09:00:00Z"),
-        endTime: new Date("2099-06-15T17:00:00Z"),
+        startTime: timeStringToDbTime("09:00"),
+        endTime: timeStringToDbTime("17:00"),
       });
 
       // Try to create an overlapping slot
@@ -349,8 +354,8 @@ describe("Work Shift Slots Service", () => {
         clientId: client.id,
         deliverymanId: deliveryman.id,
         shiftDate: SHIFT_DATE,
-        startTime: new Date("2099-06-15T08:00:00Z"),
-        endTime: new Date("2099-06-15T12:00:00Z"),
+        startTime: timeStringToDbTime("08:00"),
+        endTime: timeStringToDbTime("12:00"),
       });
 
       // New slot: 12:00-18:00 (no overlap, adjacent is fine)
@@ -360,8 +365,8 @@ describe("Work Shift Slots Service", () => {
           ...BASE_BODY,
           clientId: client.id,
           deliverymanId: deliveryman.id,
-          startTime: new Date("2099-06-15T12:00:00Z"),
-          endTime: new Date("2099-06-15T18:00:00Z"),
+          startTime: "12:00",
+          endTime: "18:00",
         },
         LOGGED_USER_ID,
       );
@@ -565,7 +570,13 @@ describe("Work Shift Slots Service", () => {
 
       const result = await service.upsert(
         created.id,
-        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id, shiftDate, status: "CONFIRMED" },
+        {
+          ...BASE_BODY,
+          clientId: client.id,
+          deliverymanId: deliveryman.id,
+          shiftDate: dbDateToDateKey(shiftDate),
+          status: "CONFIRMED",
+        },
         LOGGED_USER_ID,
       );
 
@@ -590,7 +601,13 @@ describe("Work Shift Slots Service", () => {
 
       const result = await service.upsert(
         created.id,
-        { ...BASE_BODY, clientId: client.id, deliverymanId: deliveryman.id, shiftDate, status: "CONFIRMED" },
+        {
+          ...BASE_BODY,
+          clientId: client.id,
+          deliverymanId: deliveryman.id,
+          shiftDate: dbDateToDateKey(shiftDate),
+          status: "CONFIRMED",
+        },
         LOGGED_USER_ID,
       );
 
@@ -852,22 +869,22 @@ describe("Work Shift Slots Service", () => {
       await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
       await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const targetDate = "2099-06-20";
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       const { slots: copied } = result._unsafeUnwrap();
       expect(copied).toHaveLength(2);
-      expect(copied[0].shiftDate).toEqual(targetDate);
-      expect(copied[1].shiftDate).toEqual(targetDate);
+      expect(copied[0].shiftDate).toEqual(dateKeyToDbDate(targetDate));
+      expect(copied[1].shiftDate).toEqual(dateKeyToDbDate(targetDate));
     });
 
     it("should set status OPEN for copied slots without deliveryman", async () => {
       const client = await createTestClient();
       await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const targetDate = "2099-06-20";
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       const { slots: copied } = result._unsafeUnwrap();
@@ -881,8 +898,8 @@ describe("Work Shift Slots Service", () => {
       const deliveryman = await createTestDeliveryman({ branchId: branch.id });
       await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const targetDate = "2099-06-20";
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       const { slots: copied } = result._unsafeUnwrap();
@@ -893,7 +910,7 @@ describe("Work Shift Slots Service", () => {
     it("should return 404 when no slots exist on source date", async () => {
       const client = await createTestClient();
 
-      const result = await service.copySlots(new Date("2099-01-01"), new Date("2099-01-02"), client.id, LOGGED_USER_ID);
+      const result = await service.copySlots("2099-01-01", "2099-01-02", client.id, LOGGED_USER_ID);
 
       expect(result.isErr()).toBe(true);
       expect(result._unsafeUnwrapErr().statusCode).toBe(404);
@@ -904,8 +921,8 @@ describe("Work Shift Slots Service", () => {
       const client = await createTestClient();
       const source = await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const targetDate = "2099-06-20";
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       const { slots: copied } = result._unsafeUnwrap();
@@ -916,7 +933,7 @@ describe("Work Shift Slots Service", () => {
       const branch = await createTestBranch();
       const client = await createTestClient({ branchId: branch.id });
       const deliveryman = await createTestDeliveryman({ branchId: branch.id });
-      const targetDate = new Date("2099-06-20");
+      const targetDate = "2099-06-20";
 
       // Create source slot with deliveryman
       await createTestWorkShiftSlot({ clientId: client.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
@@ -925,12 +942,12 @@ describe("Work Shift Slots Service", () => {
       await createTestWorkShiftSlot({
         clientId: client.id,
         deliverymanId: deliveryman.id,
-        shiftDate: targetDate,
-        startTime: new Date("2099-06-20T09:00:00Z"),
-        endTime: new Date("2099-06-20T17:00:00Z"),
+        shiftDate: dateKeyToDbDate(targetDate),
+        startTime: timeStringToDbTime("09:00"),
+        endTime: timeStringToDbTime("17:00"),
       });
 
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       const { slots: copied, degradedCount } = result._unsafeUnwrap();
@@ -949,15 +966,15 @@ describe("Work Shift Slots Service", () => {
       await createTestWorkShiftSlot({ clientId: client1.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
       await createTestWorkShiftSlot({ clientId: client2.id, deliverymanId: deliveryman.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
+      const targetDate = "2099-06-20";
 
       // Copy client1 slots first (will succeed)
-      const result1 = await service.copySlots(SHIFT_DATE, targetDate, client1.id, LOGGED_USER_ID);
+      const result1 = await service.copySlots(SHIFT_DATE_KEY, targetDate, client1.id, LOGGED_USER_ID);
       expect(result1.isOk()).toBe(true);
       expect(result1._unsafeUnwrap().degradedCount).toBe(0);
 
       // Copy client2 slots - deliveryman now has conflict from first copy
-      const result2 = await service.copySlots(SHIFT_DATE, targetDate, client2.id, LOGGED_USER_ID);
+      const result2 = await service.copySlots(SHIFT_DATE_KEY, targetDate, client2.id, LOGGED_USER_ID);
       expect(result2.isOk()).toBe(true);
       const { slots: copied2, degradedCount } = result2._unsafeUnwrap();
       expect(copied2[0].status).toBe("OPEN");
@@ -969,8 +986,8 @@ describe("Work Shift Slots Service", () => {
       const client = await createTestClient();
       await createTestWorkShiftSlot({ clientId: client.id, shiftDate: SHIFT_DATE });
 
-      const targetDate = new Date("2099-06-20");
-      const result = await service.copySlots(SHIFT_DATE, targetDate, client.id, LOGGED_USER_ID);
+      const targetDate = "2099-06-20";
+      const result = await service.copySlots(SHIFT_DATE_KEY, targetDate, client.id, LOGGED_USER_ID);
 
       expect(result.isOk()).toBe(true);
       expect(result._unsafeUnwrap().degradedCount).toBe(0);

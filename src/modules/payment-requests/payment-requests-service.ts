@@ -3,6 +3,7 @@ import type { Discount, PaymentRequest, Prisma, WorkShiftSlot } from "@/../gener
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
+import { dateKeyToDbDate } from "@/utils/date-time";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import type {
   PaymentRequestListQueryDTO,
@@ -239,12 +240,12 @@ export function paymentRequestsService() {
       }
     },
 
-    async getDashboardSummary(shiftDate: Date, branchId: string) {
+    async getDashboardSummary(shiftDate: string, branchId: string) {
       try {
         const PENDING_STATUSES = ["NEW", "EDITED", "EDITION_APPROVED"];
 
         const slotIds = await db.workShiftSlot.findMany({
-          where: { shiftDate, client: { branchId } },
+          where: { shiftDate: dateKeyToDbDate(shiftDate), client: { branchId } },
           select: { id: true },
         });
 
@@ -283,7 +284,7 @@ export function paymentRequestsService() {
         const skip = (page - 1) * pageSize;
 
         const workShiftSlotFilter = {
-          ...(date && { shiftDate: new Date(date) }),
+          ...(date && { shiftDate: dateKeyToDbDate(date) }),
           ...(clientId && { clientId }),
         };
 

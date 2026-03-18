@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { InviteResponseForm } from "@/components/forms/invite-response-form";
 import { Text } from "@/components/ui/text";
 import { workShiftSlotsService } from "@/modules/work-shift-slots/work-shift-slots-service";
+import { dbDateToDateKey, dbTimeToTimeString } from "@/utils/date-time";
 
 interface ConfirmarEscalaPageProps {
   searchParams: Promise<{ token?: string }>;
@@ -40,9 +41,9 @@ export default async function ConfirmarEscalaPage({ searchParams }: ConfirmarEsc
         deliverymanName={invite.deliveryman.name}
         clientName={invite.clientName}
         clientAddress={invite.clientAddress}
-        shiftDate={invite.shiftDate.toISOString()}
-        startTime={invite.startTime.toISOString()}
-        endTime={invite.endTime.toISOString()}
+        shiftDate={dbDateToDateKey(invite.shiftDate)}
+        startTime={dbTimeToTimeString(invite.startTime)}
+        endTime={dbTimeToTimeString(invite.endTime)}
       />
     </main>
   );

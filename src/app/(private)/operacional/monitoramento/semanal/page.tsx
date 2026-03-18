@@ -6,6 +6,7 @@ import { MonitoringWeeklyContent } from "@/components/composite/monitoring-weekl
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { checkPagePermission } from "@/utils/check-page-permission";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 
 dayjs.extend(isoWeek);
 
@@ -24,8 +25,9 @@ export default async function MonitoramentoSemanalPage({ searchParams }: Monitor
   const selectedGroupId = params.group || undefined;
   const selectedClientId = params.client || undefined;
 
-  const requestedWeek = params.week ? dayjs(params.week) : dayjs();
-  const weekReference = requestedWeek.isValid() ? requestedWeek : dayjs();
+  const today = getCurrentDateKeyInSaoPaulo();
+  const requestedWeek = params.week ? dayjs(params.week) : dayjs(today);
+  const weekReference = requestedWeek.isValid() ? requestedWeek : dayjs(today);
   const weekStart = weekReference.startOf("isoWeek").format("YYYY-MM-DD");
 
   const [selectedGroupResult, selectedClientResult] = await Promise.all([

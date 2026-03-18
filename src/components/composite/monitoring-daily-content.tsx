@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ContractTypeOptions } from "@/constants/contract-type";
 import { cn } from "@/lib/cn";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { MonitoringClientCard } from "./monitoring-client-card";
 import { SearchSelect } from "./search-select";
 
@@ -197,7 +198,7 @@ export function MonitoringDailyContent({
   const handleDateChange = (date: Date | undefined) => {
     if (!date) return;
     const formatted = dayjs(date).format("YYYY-MM-DD");
-    updateParams({ date: formatted === dayjs().format("YYYY-MM-DD") ? undefined : formatted });
+    updateParams({ date: formatted === getCurrentDateKeyInSaoPaulo() ? undefined : formatted });
     setCalendarOpen(false);
   };
 
@@ -275,7 +276,7 @@ export function MonitoringDailyContent({
       periodFilter === "all" ? client.planned : client.planned.filter((p) => p.period.toUpperCase() === periodFilter),
   }));
 
-  const today = dayjs();
+  const today = dayjs(getCurrentDateKeyInSaoPaulo());
   const isToday = selectedDate.isSame(today, "day");
   const weekday = selectedDate.format("dddd");
   const dayNumber = selectedDate.format("D");

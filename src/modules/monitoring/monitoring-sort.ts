@@ -1,4 +1,5 @@
 import { normalizePlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
+import { dbTimeToTimeString } from "@/utils/date-time";
 
 const STATUS_SORT_ORDER: Record<string, number> = {
   OPEN: 0,
@@ -32,11 +33,17 @@ interface SortableMonitoringWorkShift {
 const SUMMARY_COUNTABLE_STATUSES = new Set(["INVITED", "CONFIRMED", "CHECKED_IN", "PENDING_COMPLETION", "COMPLETED"]);
 
 function getTimeSortValue(value: string | Date): number {
-  const timestamp = new Date(value).getTime();
-  if (Number.isNaN(timestamp)) {
+  const time = dbTimeToTimeString(value);
+  if (!time) {
     return Number.MAX_SAFE_INTEGER;
   }
-  return timestamp;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return hours * 60 + minutes;
 }
 
 function getMonitoringPeriodSortValue(periods: string[]): number {

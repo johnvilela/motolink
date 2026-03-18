@@ -6,6 +6,15 @@ import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/hi
 import { type WorkShiftSlotStatus, workShiftSlotStatusTransitions } from "@/constants/work-shift-slot-status";
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
+import {
+  dateKeyToDbDate,
+  dbDateToDateKey,
+  dbTimeToTimeString,
+  formatDbDate,
+  getCurrentDateKeyInSaoPaulo,
+  getCurrentTimeStringInSaoPaulo,
+  timeStringToDbTime,
+} from "@/utils/date-time";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import {
   type PaymentRequestSyncResult,
@@ -21,25 +30,12 @@ import type {
 
 dayjs.extend(utc);
 
-const INVITE_TIME_ZONE = "America/Sao_Paulo";
-
-const inviteDateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: INVITE_TIME_ZONE,
-});
-
-const inviteTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-  timeZone: INVITE_TIME_ZONE,
-});
-
 function formatInviteDate(date: Date) {
-  return inviteDateFormatter.format(date);
+  return formatDbDate(date);
 }
 
 function formatInviteTime(date: Date) {
-  return inviteTimeFormatter.format(date);
+  return dbTimeToTimeString(date);
 }
 
 function logPaymentRequestSyncHistory(sync: PaymentRequestSyncResult | null, userId: string) {
@@ -85,11 +81,11 @@ function validateAssignedDeliverymanForStatus(status: string, deliverymanId?: st
 const TERMINAL_STATUSES = ["CANCELLED", "ABSENT", "REJECTED", "UNANSWERED"];
 
 function getTodayDateKey() {
-  return dayjs().format("YYYY-MM-DD");
+  return getCurrentDateKeyInSaoPaulo();
 }
 
 function getStoredDateKey(date: Date) {
-  return dayjs.utc(date).format("YYYY-MM-DD");
+  return dbDateToDateKey(date);
 }
 
 function isCurrentShiftDate(date: Date) {
@@ -135,19 +131,34 @@ function hasOverlapInList(
 }
 
 function toWorkShiftSlotCreateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedCreateInput {
-  const { isFreelancer: _isFreelancer, ...data } = body;
-  return { ...data, totalValueToPay: calculateTotalValueToPay(body) };
+  const { isFreelancer: _isFreelancer, shiftDate, startTime, endTime, ...data } = body;
+  return {
+    ...data,
+    shiftDate: dateKeyToDbDate(shiftDate),
+    startTime: timeStringToDbTime(startTime),
+    endTime: timeStringToDbTime(endTime),
+    totalValueToPay: calculateTotalValueToPay(body),
+  };
 }
 
 function toWorkShiftSlotUpdateData(body: WorkShiftSlotMutateDTO): Prisma.WorkShiftSlotUncheckedUpdateInput {
-  const { isFreelancer: _isFreelancer, ...data } = body;
-  return { ...data, totalValueToPay: calculateTotalValueToPay(body) };
+  const { isFreelancer: _isFreelancer, shiftDate, startTime, endTime, ...data } = body;
+  return {
+    ...data,
+    shiftDate: dateKeyToDbDate(shiftDate),
+    startTime: timeStringToDbTime(startTime),
+    endTime: timeStringToDbTime(endTime),
+    totalValueToPay: calculateTotalValueToPay(body),
+  };
 }
 
 export function workShiftSlotsService() {
   return {
     async upsert(id: string | undefined, body: WorkShiftSlotMutateDTO, loggedUserId: string) {
       try {
+        const shiftDate = dateKeyToDbDate(body.shiftDate);
+        const startTime = timeStringToDbTime(body.startTime);
+        const endTime = timeStringToDbTime(body.endTime);
         const include = {
           client: { select: { id: true, name: true } },
           deliveryman: { select: { id: true, name: true } },
@@ -179,9 +190,9 @@ export function workShiftSlotsService() {
           if (nextDeliverymanId) {
             const overlaps = await findOverlappingSlots({
               deliverymanId: nextDeliverymanId,
-              shiftDate: body.shiftDate,
-              startTime: body.startTime,
-              endTime: body.endTime,
+              shiftDate,
+              startTime,
+              endTime,
               excludeSlotId: id,
             });
             if (overlaps.length > 0) {
@@ -242,9 +253,9 @@ export function workShiftSlotsService() {
         if (body.deliverymanId) {
           const overlaps = await findOverlappingSlots({
             deliverymanId: body.deliverymanId,
-            shiftDate: body.shiftDate,
-            startTime: body.startTime,
-            endTime: body.endTime,
+            shiftDate,
+            startTime,
+            endTime,
           });
           if (overlaps.length > 0) {
             return errAsync({
@@ -323,7 +334,7 @@ export function workShiftSlotsService() {
           ...(clientId && { clientId }),
           ...(deliverymanId && { deliverymanId }),
           ...(status && { status }),
-          ...(shiftDate && { shiftDate }),
+          ...(shiftDate && { shiftDate: dateKeyToDbDate(shiftDate) }),
           ...(groupId && { client: { groupId } }),
           ...(search && {
             OR: [
@@ -392,11 +403,11 @@ export function workShiftSlotsService() {
         }
 
         if (status === "CHECKED_IN" && !existing.checkInAt) {
-          data.checkInAt = new Date();
+          data.checkInAt = timeStringToDbTime(getCurrentTimeStringInSaoPaulo());
         }
 
         if (status === "PENDING_COMPLETION" && !existing.checkOutAt) {
-          data.checkOutAt = new Date();
+          data.checkOutAt = timeStringToDbTime(getCurrentTimeStringInSaoPaulo());
         }
 
         const { slot: updated, paymentRequestSync } = await db.$transaction(async (tx) => {
@@ -466,7 +477,7 @@ export function workShiftSlotsService() {
             return null;
           }
 
-          return dayjs(existing.shiftDate).hour(hours).minute(minutes).second(0).millisecond(0).toDate();
+          return timeStringToDbTime(value);
         };
 
         const checkInAt = parseTime(input.checkInAt);
@@ -496,10 +507,12 @@ export function workShiftSlotsService() {
       }
     },
 
-    async copySlots(sourceDate: Date, targetDate: Date, clientId: string, loggedUserId: string) {
+    async copySlots(sourceDate: string, targetDate: string, clientId: string, loggedUserId: string) {
       try {
+        const sourceDbDate = dateKeyToDbDate(sourceDate);
+        const targetDbDate = dateKeyToDbDate(targetDate);
         const sourceSlots = await db.workShiftSlot.findMany({
-          where: { clientId, shiftDate: sourceDate },
+          where: { clientId, shiftDate: sourceDbDate },
         });
 
         if (sourceSlots.length === 0) {
@@ -518,7 +531,7 @@ export function workShiftSlotsService() {
             ? await db.workShiftSlot.findMany({
                 where: {
                   deliverymanId: { in: deliverymanIds },
-                  shiftDate: targetDate,
+                  shiftDate: targetDbDate,
                   status: { notIn: TERMINAL_STATUSES },
                 },
                 select: { deliverymanId: true, startTime: true, endTime: true },
@@ -572,7 +585,7 @@ export function workShiftSlotsService() {
             deliverymanId: assignDeliveryman,
             clientId: slot.clientId,
             contractType: slot.contractType,
-            shiftDate: targetDate,
+            shiftDate: targetDbDate,
             startTime: slot.startTime,
             endTime: slot.endTime,
             period: slot.period,
@@ -862,12 +875,12 @@ export function workShiftSlotsService() {
       }
     },
 
-    async sendBulkInvite(clientId: string, shiftDate: Date, loggedUserId: string) {
+    async sendBulkInvite(clientId: string, shiftDate: string, loggedUserId: string) {
       try {
         const slots = await db.workShiftSlot.findMany({
           where: {
             clientId,
-            shiftDate,
+            shiftDate: dateKeyToDbDate(shiftDate),
             status: "INVITED",
             deliverymanId: { not: null },
           },
@@ -1024,12 +1037,12 @@ export function workShiftSlotsService() {
       }
     },
 
-    async getDashboardSummary(shiftDate: Date, branchId: string) {
+    async getDashboardSummary(shiftDate: string, branchId: string) {
       try {
         const CONFIRMED_STATUSES = ["CONFIRMED", "CHECKED_IN", "PENDING_COMPLETION", "COMPLETED"];
 
         const slots = await db.workShiftSlot.findMany({
-          where: { shiftDate, client: { branchId } },
+          where: { shiftDate: dateKeyToDbDate(shiftDate), client: { branchId } },
           select: { status: true },
         });
 

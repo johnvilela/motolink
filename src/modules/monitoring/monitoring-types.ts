@@ -1,19 +1,5 @@
-import dayjs from "dayjs";
 import { z } from "zod";
-
-function normalizeDateOnlyValue(value: unknown) {
-  if (value instanceof Date) {
-    const parsedDate = dayjs(value);
-    return parsedDate.isValid() ? parsedDate.format("YYYY-MM-DD") : value;
-  }
-
-  if (typeof value === "string") {
-    const parsedDate = dayjs(value);
-    return parsedDate.isValid() ? parsedDate.format("YYYY-MM-DD") : value;
-  }
-
-  return value;
-}
+import { normalizeDateOnlyValue } from "@/utils/date-time";
 
 const dateOnlySchema = z.preprocess(
   normalizeDateOnlyValue,

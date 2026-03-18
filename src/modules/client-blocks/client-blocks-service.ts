@@ -1,12 +1,9 @@
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { errAsync, okAsync } from "neverthrow";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
+import { dateKeyToDbDate, getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import type { ClientBlockDeleteDTO, ClientBlockMutateDTO, DeliverymanBanHistoryItem } from "./client-blocks-types";
-
-dayjs.extend(utc);
 
 interface ClientBlockCreatedTraceRow {
   entityId: string;
@@ -18,11 +15,11 @@ interface ClientBlockCreatedTraceRow {
 const CLIENT_ALREADY_BANNED_ERROR = "CLIENT_ALREADY_BANNED";
 
 function getTodayDateKey() {
-  return dayjs().format("YYYY-MM-DD");
+  return getCurrentDateKeyInSaoPaulo();
 }
 
 function toStoredDate(dateKey: string) {
-  return dayjs.utc(dateKey).toDate();
+  return dateKeyToDbDate(dateKey);
 }
 
 export function clientBlocksService() {

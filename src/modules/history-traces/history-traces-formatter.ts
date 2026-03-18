@@ -1,9 +1,9 @@
-import dayjs from "dayjs";
 import { PAYMENT_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { ContractTypeOptions } from "@/constants/contract-type";
 import { PAYMENT_REQUEST_STATUS_LABELS } from "@/constants/payment-request-status";
 import { PLANNING_PERIOD_LABELS } from "@/constants/planning-period";
 import { WORK_SHIFT_SLOT_STATUS_LABELS } from "@/constants/work-shift-slot-status";
+import { dbTimeToTimeString, formatDbDate } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 
@@ -95,13 +95,11 @@ function formatValue(field: string, val: unknown): string {
   if (MONEY_FIELDS.has(field)) return formatMoneyDisplay(val as string | number);
 
   if (field === "shiftDate") {
-    const parsed = dayjs(String(val));
-    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : String(val);
+    return formatDbDate(val as string | Date, String(val));
   }
 
   if (TIME_FIELDS.has(field)) {
-    const parsed = dayjs(String(val));
-    return parsed.isValid() ? parsed.format("HH:mm") : String(val);
+    return dbTimeToTimeString(val as string | Date, String(val));
   }
 
   if (CHECK_TIME_FIELDS.has(field)) {

@@ -53,6 +53,7 @@ import {
   createDiscountAction,
   updateWorkShiftSlotStatusAction,
 } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 
@@ -206,7 +207,7 @@ export function MonitoringWorkShiftDetailSheet({
   const isDaily = slot.paymentForm === "DAILY";
   const isGuaranteed = slot.paymentForm === "GUARANTEED";
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
-  const isCurrentShiftDate = shiftDate === dayjs().format("YYYY-MM-DD");
+  const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
   const isOpenWithoutDeliveryman = status === "OPEN" && !slot.deliveryman;
 

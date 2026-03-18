@@ -1,6 +1,5 @@
 "use client";
 
-import dayjs from "dayjs";
 import { ArrowRightIcon, BuildingIcon, EllipsisVerticalIcon, EyeIcon, InfoIcon, PencilIcon, XIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -43,6 +42,7 @@ import {
 } from "@/constants/payment-request-status";
 import { cn } from "@/lib/cn";
 import { updatePaymentRequestStatusAction } from "@/modules/payment-requests/payment-requests-actions";
+import { formatDbDate } from "@/utils/date-time";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { Text } from "../ui/text";
 
@@ -183,9 +183,7 @@ export function PaymentRequestsList({ items, onViewDetails, onEdit, userRole }: 
           const canChangeStatus = !(status === "EDITED" && userRole !== "ADMIN");
           const kmCost = (item.additionalKm ?? 0) * (item.deliverymanAdditionalKm ?? 0);
           const netTotal = item.amount - item.discount + item.additionalTax + kmCost;
-          const shiftDate = item.workShiftSlot?.shiftDate
-            ? dayjs(item.workShiftSlot.shiftDate).format("DD/MM/YYYY")
-            : "—";
+          const shiftDate = item.workShiftSlot?.shiftDate ? formatDbDate(item.workShiftSlot.shiftDate, "—") : "—";
           const deliverymanName = item.deliveryman?.name ?? "Sem colaborador";
 
           return (

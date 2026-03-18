@@ -5,6 +5,7 @@ import { MonitoringDailyContent } from "@/components/composite/monitoring-daily-
 import { clientsService } from "@/modules/clients/clients-service";
 import { groupsService } from "@/modules/groups/groups-service";
 import { checkPagePermission } from "@/utils/check-page-permission";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 
 interface MonitoramentoDiarioPageProps {
   searchParams: Promise<{
@@ -20,10 +21,8 @@ export default async function MonitoramentoDiarioPage({ searchParams }: Monitora
   const params = await searchParams;
   const selectedGroupId = params.group || undefined;
   const selectedClientId = params.client || undefined;
-  const selectedDate =
-    params.date && dayjs(params.date).isValid()
-      ? dayjs(params.date).format("YYYY-MM-DD")
-      : dayjs().format("YYYY-MM-DD");
+  const today = getCurrentDateKeyInSaoPaulo();
+  const selectedDate = params.date && dayjs(params.date).isValid() ? dayjs(params.date).format("YYYY-MM-DD") : today;
 
   const [selectedGroupResult, selectedClientResult] = await Promise.all([
     selectedGroupId ? groupsService().getById(selectedGroupId) : Promise.resolve(null),

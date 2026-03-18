@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { type PlanningPeriod, PlanningPeriodOptions } from "@/constants/planning-period";
 import { cn } from "@/lib/cn";
 import { upsertPlanningAction } from "@/modules/planning/planning-actions";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 
 interface PlanningClientCardProps {
   client: {
@@ -32,7 +33,7 @@ interface PlanningClientCardProps {
 }
 
 export function PlanningClientCard({ client, weekDays, dayLabels, planningByDate }: PlanningClientCardProps) {
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = getCurrentDateKeyInSaoPaulo();
   const address = `${client.street}, ${client.number} - ${client.neighborhood}, ${client.city}/${client.uf}`;
 
   return (

@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { CalendarDays, CheckCircle, Clock, DollarSign, StickyNote } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -14,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { paymentRequestsService } from "@/modules/payment-requests/payment-requests-service";
 import { usersService } from "@/modules/users/users-service";
 import { workShiftSlotsService } from "@/modules/work-shift-slots/work-shift-slots-service";
+import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 
 // --- Helpers ---
 
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
 
   if (!userId) redirect("/login");
 
-  const today = dayjs().startOf("day").toDate();
+  const today = getCurrentDateKeyInSaoPaulo();
 
   const [userResult, shiftResult, financialResult] = await Promise.all([
     usersService().getById(userId),

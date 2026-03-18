@@ -1,13 +1,17 @@
 import { z } from "zod";
+import { isDateKey, isTimeString, normalizeTimeString } from "@/utils/date-time";
+
+const dateKeySchema = z.string().refine(isDateKey, { message: "Data inválida" });
+const timeStringSchema = z.string().refine(isTimeString, { message: "Hora inválida" }).transform(normalizeTimeString);
 
 export const workShiftSlotMutateSchema = z.object({
   deliverymanId: z.string().uuid({ message: "ID do entregador inválido" }).optional(),
   clientId: z.string().uuid({ message: "ID do cliente é obrigatório" }),
   status: z.string().min(1, { message: "Status é obrigatório" }),
   contractType: z.string().min(1, { message: "Tipo de contrato é obrigatório" }),
-  shiftDate: z.coerce.date({ message: "Data do turno é obrigatória" }),
-  startTime: z.coerce.date({ message: "Hora de início é obrigatória" }),
-  endTime: z.coerce.date({ message: "Hora de término é obrigatória" }),
+  shiftDate: dateKeySchema,
+  startTime: timeStringSchema,
+  endTime: timeStringSchema,
   period: z.array(z.string()).default(["daytime"]),
   auditStatus: z.string().min(1, { message: "Status de auditoria é obrigatório" }),
   isFreelancer: z.boolean().default(false),
@@ -36,7 +40,7 @@ export const workShiftSlotListQuerySchema = z.object({
   clientId: z.string().optional(),
   deliverymanId: z.string().optional(),
   status: z.string().optional(),
-  shiftDate: z.coerce.date().optional(),
+  shiftDate: dateKeySchema.optional(),
   groupId: z.string().uuid().optional(),
 });
 
@@ -70,8 +74,8 @@ export const discountCancelSchema = z.object({
 export type DiscountCancelDTO = z.infer<typeof discountCancelSchema>;
 
 export const workShiftSlotCopySchema = z.object({
-  sourceDate: z.coerce.date({ message: "Data de origem é obrigatória" }),
-  targetDate: z.coerce.date({ message: "Data de destino é obrigatória" }),
+  sourceDate: dateKeySchema,
+  targetDate: dateKeySchema,
   clientId: z.string().uuid({ message: "ID do cliente inválido" }),
 });
 export type WorkShiftSlotCopyDTO = z.infer<typeof workShiftSlotCopySchema>;
@@ -84,7 +88,7 @@ export type SendInviteDTO = z.infer<typeof sendInviteSchema>;
 
 export const sendBulkInviteSchema = z.object({
   clientId: z.string().uuid({ message: "ID do cliente inválido" }),
-  shiftDate: z.coerce.date({ message: "Data do turno é obrigatória" }),
+  shiftDate: dateKeySchema,
 });
 
 export type SendBulkInviteDTO = z.infer<typeof sendBulkInviteSchema>;

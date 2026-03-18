@@ -1,7 +1,5 @@
 "use client";
 
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import { CalendarDays, CheckCircle2, Clock, MapPin, User, XCircle } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
@@ -13,9 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/cn";
 import { respondToInviteAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
+import { formatDbDate } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
-
-dayjs.extend(utc);
 
 interface InviteResponseFormProps {
   token: string;
@@ -150,7 +147,7 @@ function InviteResponseForm({
           <DetailRow icon={User} label="Prestador" value={deliverymanName} />
           <DetailRow icon={User} label="Cliente" value={clientName} />
           <DetailRow icon={MapPin} label="Local" value={clientAddress} className="max-w-[60%]" />
-          <DetailRow icon={CalendarDays} label="Data" value={dayjs.utc(shiftDate).format("DD/MM/YYYY")} />
+          <DetailRow icon={CalendarDays} label="Data" value={formatDbDate(shiftDate, "--/--/----")} />
           <DetailRow
             icon={Clock}
             label="Horário"

@@ -6,6 +6,7 @@ dayjs.extend(utc);
 
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
+import { dateKeyToDbDate, dbDateToDateKey } from "@/utils/date-time";
 import { compareMonitoringWorkShifts } from "./monitoring-sort";
 import type { MonitoringQueryDTO, MonitoringWeeklyQueryDTO } from "./monitoring-types";
 
@@ -42,7 +43,7 @@ export function monitoringService() {
     async getDaily(query: MonitoringQueryDTO) {
       try {
         const { branchId, clientId, groupId, targetDate } = query;
-        const targetDateTime = dayjs(targetDate).toISOString();
+        const targetDateTime = dateKeyToDbDate(targetDate);
 
         const clients = await db.client.findMany({
           where: {
@@ -128,8 +129,8 @@ export function monitoringService() {
     async getWeekly(query: MonitoringWeeklyQueryDTO) {
       try {
         const { branchId, clientId, groupId, startDate, endDate } = query;
-        const startDateTime = dayjs.utc(startDate).toISOString();
-        const endDateTime = dayjs.utc(endDate).toISOString();
+        const startDateTime = dateKeyToDbDate(startDate);
+        const endDateTime = dateKeyToDbDate(endDate);
 
         const clients = await db.client.findMany({
           where: {
@@ -185,7 +186,7 @@ export function monitoringService() {
 
         const plannedByClientDate = new Map<string, Map<string, typeof planned>>();
         for (const planning of planned) {
-          const dateStr = dayjs.utc(planning.plannedDate).format("YYYY-MM-DD");
+          const dateStr = dbDateToDateKey(planning.plannedDate);
           let dateMap = plannedByClientDate.get(planning.clientId);
           if (!dateMap) {
             dateMap = new Map();
@@ -198,7 +199,7 @@ export function monitoringService() {
 
         const workShiftsByClientDate = new Map<string, Map<string, typeof workShiftsWithBanState>>();
         for (const workShift of workShiftsWithBanState) {
-          const dateStr = dayjs.utc(workShift.shiftDate).format("YYYY-MM-DD");
+          const dateStr = dbDateToDateKey(workShift.shiftDate);
           let dateMap = workShiftsByClientDate.get(workShift.clientId);
           if (!dateMap) {
             dateMap = new Map();

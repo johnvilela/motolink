@@ -3,6 +3,7 @@ import utc from "dayjs/plugin/utc";
 import { errAsync, okAsync } from "neverthrow";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
+import { dateKeyToDbDate, getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import { planningTransformer } from "./planning-transformer";
 import type { PlanningListQueryDTO, PlanningUpsertDTO } from "./planning-types";
@@ -13,9 +14,9 @@ export function planningService() {
   return {
     async upsert(body: PlanningUpsertDTO, loggedUserId: string) {
       try {
-        const today = dayjs().format("YYYY-MM-DD");
+        const today = getCurrentDateKeyInSaoPaulo();
         const plannedDate = body.plannedDate;
-        const plannedDateTime = dayjs.utc(plannedDate).toISOString();
+        const plannedDateTime = dateKeyToDbDate(plannedDate);
 
         if (plannedDate < today) {
           return errAsync({
@@ -52,8 +53,8 @@ export function planningService() {
     async listAll(query: PlanningListQueryDTO) {
       try {
         const { branchId, groupId, regionId, clientId, startAt, endAt } = query;
-        const startAtDateTime = startAt ? dayjs.utc(startAt).toISOString() : undefined;
-        const endAtDateTime = endAt ? dayjs.utc(endAt).toISOString() : undefined;
+        const startAtDateTime = startAt ? dateKeyToDbDate(startAt) : undefined;
+        const endAtDateTime = endAt ? dateKeyToDbDate(endAt) : undefined;
 
         const where = {
           ...(branchId && { branchId }),
