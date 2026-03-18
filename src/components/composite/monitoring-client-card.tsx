@@ -40,7 +40,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Spinner } from "@/components/ui/spinner";
 import { PAYMENT_TYPE_LABELS, PERIOD_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
-import { compareMonitoringWorkShifts, countsForMonitoringSummary } from "@/modules/monitoring/monitoring-sort";
+import {
+  compareMonitoringWorkShifts,
+  consumesMonitoringPlanningSpot,
+  countsForMonitoringSummary,
+} from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction, sendBulkInviteAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { MonitoringPlanningRow } from "./monitoring-planning-row";
@@ -138,7 +142,7 @@ interface MonitoringClientCardProps {
   onCancelCopy?: () => void;
 }
 
-const HIDDEN_WORK_SHIFT_STATUSES = ["COMPLETED", "ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
+const HIDDEN_WORK_SHIFT_STATUSES = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
 
 function isNonEmpty(val: unknown): boolean {
   if (val === null || val === undefined) return false;
@@ -287,7 +291,8 @@ export function MonitoringClientCard({
     const periodSlots = workShiftSlots.filter((slot) =>
       slot.period.some((slotPeriod) => slotPeriod.toUpperCase() === period),
     );
-    const vacantCount = Math.max(0, plannedCount - periodSlots.length);
+    const occupiedCount = periodSlots.filter(consumesMonitoringPlanningSpot).length;
+    const vacantCount = Math.max(0, plannedCount - occupiedCount);
 
     for (let i = 0; i < vacantCount; i++) {
       visibleRows.push(

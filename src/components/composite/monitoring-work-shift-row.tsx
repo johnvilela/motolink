@@ -222,6 +222,9 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
   const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
+  const rowStatusColor = isOpenWithoutDeliveryman
+    ? "bg-red-100 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-900/70"
+    : statusColor;
 
   const formatTime = (val: string | null | undefined) => formatWorkShiftCheckTime(val, "--:--");
 
@@ -262,17 +265,30 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
     <>
       <div
         className={cn(
-          "flex items-center rounded-md border-l-4 bg-muted/30 px-4 py-3",
-          status === "OPEN" && !slot.deliveryman
-            ? "border-l-amber-400"
+          "flex items-center rounded-md border border-transparent border-l-4 px-4 py-3 transition-colors",
+          isOpenWithoutDeliveryman
+            ? "border-red-200 bg-gradient-to-r from-red-50 via-rose-50/80 to-white shadow-[0_10px_24px_-18px_rgba(185,28,28,0.45)] dark:border-red-900/60 dark:from-red-950/40 dark:via-rose-950/20 dark:to-background"
+            : "bg-muted/30",
+          isOpenWithoutDeliveryman
+            ? "border-l-red-500"
             : (WORK_SHIFT_SLOT_ROW_BORDER_COLORS[status] ?? "border-l-slate-300"),
         )}
       >
         <div className="flex items-center gap-4">
-          <div className="min-w-80 lg:border-r lg:border-gray-200 lg:pr-4">
+          <div
+            className={cn(
+              "min-w-80 lg:border-r lg:pr-4",
+              isOpenWithoutDeliveryman ? "lg:border-red-200/80 dark:lg:border-red-900/60" : "lg:border-gray-200",
+            )}
+          >
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <p className="max-w-[12rem] truncate text-sm font-medium">
+                <p
+                  className={cn(
+                    "max-w-[12rem] truncate text-sm font-medium",
+                    isOpenWithoutDeliveryman && "text-red-950 dark:text-red-100",
+                  )}
+                >
                   {slot.deliveryman?.name ?? "Sem entregador"}
                 </p>
                 {isBannedAssigned && (
@@ -290,9 +306,21 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                   </span>
                 )}
               </div>
-              <p className="max-w-[12rem] truncate text-xs text-muted-foreground">{contractLabel}</p>
+              <p
+                className={cn(
+                  "max-w-[12rem] truncate text-xs text-muted-foreground",
+                  isOpenWithoutDeliveryman && "text-red-700/80 dark:text-red-200/80",
+                )}
+              >
+                {contractLabel}
+              </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div
+              className={cn(
+                "flex items-center gap-2 text-xs text-muted-foreground",
+                isOpenWithoutDeliveryman && "text-red-700/80 dark:text-red-200/80",
+              )}
+            >
               <span className="inline-flex items-center gap-1">
                 {slot.period.some((p) => p.toUpperCase() === planningPeriodConst.DAYTIME) && (
                   <SunIcon className="size-3" />
@@ -311,18 +339,40 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           </div>
 
           <div
-            className={cn("shrink-0 text-center text-xs", (isAbsent || isUnanswered || isCancelled) && "opacity-50")}
+            className={cn(
+              "shrink-0 text-center text-xs",
+              (isAbsent || isUnanswered || isCancelled) && "opacity-50",
+              isOpenWithoutDeliveryman && "text-red-900 dark:text-red-100",
+            )}
           >
-            <p className="text-muted-foreground">Planejado</p>
+            <p
+              className={cn(
+                "text-muted-foreground",
+                isOpenWithoutDeliveryman && "text-red-700/80 dark:text-red-200/80",
+              )}
+            >
+              Planejado
+            </p>
             <p className="font-medium">
               {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
             </p>
           </div>
 
           <div
-            className={cn("shrink-0 text-center text-xs", (isAbsent || isUnanswered || isCancelled) && "opacity-50")}
+            className={cn(
+              "shrink-0 text-center text-xs",
+              (isAbsent || isUnanswered || isCancelled) && "opacity-50",
+              isOpenWithoutDeliveryman && "text-red-900 dark:text-red-100",
+            )}
           >
-            <p className="text-muted-foreground">Check-in/check-out</p>
+            <p
+              className={cn(
+                "text-muted-foreground",
+                isOpenWithoutDeliveryman && "text-red-700/80 dark:text-red-200/80",
+              )}
+            >
+              Check-in/check-out
+            </p>
             <p className="font-medium">
               {isAbsent || isUnanswered || isCancelled
                 ? "--:-- - --:--"
@@ -333,7 +383,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
           <span
             className={cn(
               "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium",
-              statusColor,
+              rowStatusColor,
             )}
           >
             {statusLabel}
@@ -345,7 +395,12 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             {isOpenWithoutDeliveryman ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={() => setEditSheetOpen(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 bg-white/85 text-red-700 shadow-sm hover:bg-red-100 hover:text-red-800 dark:border-red-900/70 dark:bg-red-950/20 dark:text-red-100 dark:hover:bg-red-950/40"
+                    onClick={() => setEditSheetOpen(true)}
+                  >
                     <SendIcon className="mr-1 size-3.5" />
                     Selecionar entregador
                   </Button>
@@ -411,7 +466,16 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetailSheetOpen(true)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "size-8",
+                    isOpenWithoutDeliveryman &&
+                      "text-red-700 hover:bg-red-100/80 hover:text-red-800 dark:text-red-200 dark:hover:bg-red-950/40",
+                  )}
+                  onClick={() => setDetailSheetOpen(true)}
+                >
                   <EyeIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -423,7 +487,11 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-8"
+                  className={cn(
+                    "size-8",
+                    isOpenWithoutDeliveryman &&
+                      "text-red-700 hover:bg-red-100/80 hover:text-red-800 dark:text-red-200 dark:hover:bg-red-950/40",
+                  )}
                   onClick={() => setInviteConfirmOpen(true)}
                   disabled={!slot.deliveryman || isTerminal || isMutating}
                 >
@@ -437,7 +505,15 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "size-8",
+                        isOpenWithoutDeliveryman &&
+                          "text-red-700 hover:bg-red-100/80 hover:text-red-800 dark:text-red-200 dark:hover:bg-red-950/40",
+                      )}
+                    >
                       <EllipsisVerticalIcon className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>

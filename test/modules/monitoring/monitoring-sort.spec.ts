@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { compareMonitoringWorkShifts } from "../../../src/modules/monitoring/monitoring-sort";
+import {
+  compareMonitoringWorkShifts,
+  consumesMonitoringPlanningSpot,
+  countsForMonitoringSummary,
+} from "../../../src/modules/monitoring/monitoring-sort";
 
 describe("compareMonitoringWorkShifts", () => {
   it("orders monitoring work shifts only by start time", () => {
@@ -67,5 +71,33 @@ describe("compareMonitoringWorkShifts", () => {
       .map((slot) => slot.id);
 
     expect(orderedIds).toEqual(["first-open", "second-completed", "third-invited"]);
+  });
+});
+
+describe("countsForMonitoringSummary", () => {
+  it("counts open slots only when a deliveryman is assigned", () => {
+    expect(countsForMonitoringSummary({ status: "OPEN", deliveryman: { name: "Ana" } })).toBe(true);
+    expect(countsForMonitoringSummary({ status: "OPEN", deliveryman: null })).toBe(false);
+  });
+
+  it("does not count unanswered, rejected, cancelled, or absent slots", () => {
+    expect(countsForMonitoringSummary({ status: "UNANSWERED", deliveryman: { name: "Ana" } })).toBe(false);
+    expect(countsForMonitoringSummary({ status: "REJECTED", deliveryman: { name: "Ana" } })).toBe(false);
+    expect(countsForMonitoringSummary({ status: "CANCELLED", deliveryman: { name: "Ana" } })).toBe(false);
+    expect(countsForMonitoringSummary({ status: "ABSENT", deliveryman: { name: "Ana" } })).toBe(false);
+  });
+});
+
+describe("consumesMonitoringPlanningSpot", () => {
+  it("keeps open and completed slots consuming planned capacity", () => {
+    expect(consumesMonitoringPlanningSpot({ status: "OPEN" })).toBe(true);
+    expect(consumesMonitoringPlanningSpot({ status: "COMPLETED" })).toBe(true);
+  });
+
+  it("frees planned capacity for unanswered, rejected, cancelled, and absent slots", () => {
+    expect(consumesMonitoringPlanningSpot({ status: "UNANSWERED" })).toBe(false);
+    expect(consumesMonitoringPlanningSpot({ status: "REJECTED" })).toBe(false);
+    expect(consumesMonitoringPlanningSpot({ status: "CANCELLED" })).toBe(false);
+    expect(consumesMonitoringPlanningSpot({ status: "ABSENT" })).toBe(false);
   });
 });

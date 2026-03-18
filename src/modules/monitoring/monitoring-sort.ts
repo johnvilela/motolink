@@ -10,6 +10,14 @@ interface SortableMonitoringWorkShift {
 }
 
 const SUMMARY_COUNTABLE_STATUSES = new Set(["INVITED", "CONFIRMED", "CHECKED_IN", "PENDING_COMPLETION", "COMPLETED"]);
+const PLANNING_COUNTABLE_STATUSES = new Set([
+  "OPEN",
+  "INVITED",
+  "CONFIRMED",
+  "CHECKED_IN",
+  "PENDING_COMPLETION",
+  "COMPLETED",
+]);
 
 function getTimeSortValue(value: string | Date): number {
   const time = dbTimeToTimeString(value);
@@ -41,4 +49,8 @@ export function countsForMonitoringSummary(slot: Pick<SortableMonitoringWorkShif
   }
 
   return SUMMARY_COUNTABLE_STATUSES.has(slot.status);
+}
+
+export function consumesMonitoringPlanningSpot(slot: Pick<SortableMonitoringWorkShift, "status">): boolean {
+  return PLANNING_COUNTABLE_STATUSES.has(slot.status);
 }

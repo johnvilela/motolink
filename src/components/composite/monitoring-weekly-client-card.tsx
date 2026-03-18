@@ -44,7 +44,11 @@ import {
   type WorkShiftSlotStatus,
 } from "@/constants/work-shift-slot-status";
 import { cn } from "@/lib/cn";
-import { compareMonitoringWorkShifts, countsForMonitoringSummary } from "@/modules/monitoring/monitoring-sort";
+import {
+  compareMonitoringWorkShifts,
+  consumesMonitoringPlanningSpot,
+  countsForMonitoringSummary,
+} from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { getCurrentDateKeyInSaoPaulo } from "@/utils/date-time";
 import { formatWorkShiftCheckTime } from "@/utils/format-work-shift-check-time";
@@ -428,7 +432,8 @@ export function MonitoringWeeklyClientCard({
                             const periodSlots = dayData.workShifts.filter((slot) =>
                               slot.period.some((slotPeriod) => slotPeriod.toUpperCase() === period),
                             );
-                            const vacantCount = Math.max(0, plannedCount - periodSlots.length);
+                            const occupiedCount = periodSlots.filter(consumesMonitoringPlanningSpot).length;
+                            const vacantCount = Math.max(0, plannedCount - occupiedCount);
 
                             for (let idx = 0; idx < vacantCount; idx++) {
                               items.push(
