@@ -7,6 +7,8 @@ import {
   CloudRainIcon,
   CopyIcon,
   CreditCardIcon,
+  EyeIcon,
+  EyeOffIcon,
   MapPinIcon,
   MoonIcon,
   PackageIcon,
@@ -136,6 +138,8 @@ interface MonitoringClientCardProps {
   onCancelCopy?: () => void;
 }
 
+const HIDDEN_WORK_SHIFT_STATUSES = ["COMPLETED", "ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
+
 function isNonEmpty(val: unknown): boolean {
   if (val === null || val === undefined) return false;
   if (typeof val === "number") return val !== 0;
@@ -157,6 +161,7 @@ export function MonitoringClientCard({
 }: MonitoringClientCardProps) {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [confirmPasteOpen, setConfirmPasteOpen] = useState(false);
+  const [showAllShifts, setShowAllShifts] = useState(false);
 
   const { executeAsync: executeCopy, isExecuting: isCopying } = useAction(copyWorkShiftSlotsAction);
   const { executeAsync: executeBulkInvite, isExecuting: isSendingBulkInvite } = useAction(sendBulkInviteAction);
@@ -264,11 +269,17 @@ export function MonitoringClientCard({
     })
     .filter((s) => s.plannedCount > 0 || s.filledCount > 0);
 
-  const allRows: React.ReactNode[] = workShiftSlots
-    .toSorted(compareMonitoringWorkShifts)
-    .map((slot) => (
-      <MonitoringWorkShiftRow key={slot.id} slot={slot} client={client} shiftDate={shiftDate} onRefresh={onRefresh} />
-    ));
+  const sortedSlots = workShiftSlots.toSorted(compareMonitoringWorkShifts);
+  const visibleSlots = sortedSlots.filter((slot) => !HIDDEN_WORK_SHIFT_STATUSES.includes(slot.status));
+  const hiddenSlots = sortedSlots.filter((slot) => HIDDEN_WORK_SHIFT_STATUSES.includes(slot.status));
+
+  const visibleRows: React.ReactNode[] = visibleSlots.map((slot) => (
+    <MonitoringWorkShiftRow key={slot.id} slot={slot} client={client} shiftDate={shiftDate} onRefresh={onRefresh} />
+  ));
+
+  const hiddenRows: React.ReactNode[] = hiddenSlots.map((slot) => (
+    <MonitoringWorkShiftRow key={slot.id} slot={slot} client={client} shiftDate={shiftDate} onRefresh={onRefresh} />
+  ));
 
   for (const period of periods) {
     const planning = plannings.find((p) => p.period === period);
@@ -279,7 +290,7 @@ export function MonitoringClientCard({
     const vacantCount = Math.max(0, plannedCount - periodSlots.length);
 
     for (let i = 0; i < vacantCount; i++) {
-      allRows.push(
+      visibleRows.push(
         <MonitoringPlanningRow
           key={`vacant-${period}-${i}`}
           periodLabel={PLANNING_PERIOD_LABELS[period]}
@@ -371,19 +382,42 @@ export function MonitoringClientCard({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {allRows.length > 0 ? (
-              allRows
+            {visibleRows.length > 0 || hiddenRows.length > 0 ? (
+              <>
+                {visibleRows}
+                {showAllShifts && hiddenRows}
+              </>
             ) : (
               <div className="flex items-center justify-center rounded-lg border border-dashed py-6">
                 <p className="text-sm text-muted-foreground">Nenhum turno ou planejamento para este dia</p>
               </div>
             )}
           </div>
-          <div className="mt-3">
+          <div className="mt-3 space-y-2">
             <Button variant="outline" size="sm" className="w-full" onClick={() => setAddSheetOpen(true)}>
               <PlusIcon className="mr-1 size-3.5" />
               Adicionar entregador
             </Button>
+            {hiddenRows.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={() => setShowAllShifts((prev) => !prev)}
+              >
+                {showAllShifts ? (
+                  <>
+                    <EyeOffIcon className="mr-1 size-3.5" />
+                    Ocultar turnos finalizados
+                  </>
+                ) : (
+                  <>
+                    <EyeIcon className="mr-1 size-3.5" />
+                    Ver todos os turnos ({hiddenRows.length})
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
