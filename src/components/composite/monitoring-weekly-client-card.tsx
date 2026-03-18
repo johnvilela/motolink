@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/cn";
 import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
+import { Text } from "../ui/text";
 import { MonitoringWorkShiftDetailSheet } from "./monitoring-work-shift-detail-sheet";
 
 interface CommercialCondition {
@@ -381,65 +382,78 @@ export function MonitoringWeeklyClientCard({
                       })()}
 
                       <div className="flex flex-wrap items-center gap-1">
-                        {periods.flatMap((period) => {
-                          const planning = dayData.planned.find((p) => p.period.toUpperCase() === period);
-                          const plannedCount = planning?.plannedCount ?? 0;
-                          const periodSlots = dayData.workShifts.filter((s) =>
-                            s.period.some((p) => p.toUpperCase() === period),
-                          );
-                          const vacantCount = Math.max(0, plannedCount - periodSlots.length);
-                          const periodLabel = PLANNING_PERIOD_LABELS[period];
-
-                          const items: React.ReactNode[] = [];
-
-                          for (const slot of periodSlots) {
-                            const status = slot.status as WorkShiftSlotStatus;
-                            const statusColor = WORK_SHIFT_SLOT_STATUS_COLORS[status] ?? "";
-                            const statusLabel = WORK_SHIFT_SLOT_STATUS_LABELS[status] ?? slot.status;
-                            const name = slot.deliveryman?.name ?? "Sem entregador";
-                            const initials = slot.deliveryman ? getInitials(slot.deliveryman.name) : "??";
-
-                            items.push(
-                              <Tooltip key={slot.id}>
-                                <TooltipTrigger asChild>
-                                  <button type="button" onClick={() => handleSlotClick(slot, dateStr)}>
-                                    <Avatar size="default">
-                                      <AvatarFallback className={cn("text-[10px]", statusColor)}>
-                                        {initials}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="font-medium">{name}</p>
-                                  <p className="text-xs">
-                                    {periodLabel} - {statusLabel} - {formatTime(slot.startTime)} -{" "}
-                                    {formatTime(slot.endTime)}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>,
+                        {(() => {
+                          const renderedSlotIds = new Set<string>();
+                          return periods.flatMap((period) => {
+                            const planning = dayData.planned.find((p) => p.period.toUpperCase() === period);
+                            const plannedCount = planning?.plannedCount ?? 0;
+                            const periodSlots = dayData.workShifts.filter((s) =>
+                              s.period.some((p) => p.toUpperCase() === period),
                             );
-                          }
+                            const vacantCount = Math.max(0, plannedCount - periodSlots.length);
 
-                          for (let idx = 0; idx < vacantCount; idx++) {
-                            items.push(
-                              <Tooltip key={`vacant-${period}-${idx}`}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    type="button"
-                                    onClick={() => handlePlannedClick(dateStr, period)}
-                                    className="flex size-8 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 transition-colors hover:border-primary/60 hover:bg-primary/5"
-                                  >
-                                    <UserIcon className="size-4 text-muted-foreground/60" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>Vaga aberta - {periodLabel}</TooltipContent>
-                              </Tooltip>,
-                            );
-                          }
+                            const items: React.ReactNode[] = [];
 
-                          return items;
-                        })}
+                            for (const slot of periodSlots) {
+                              if (renderedSlotIds.has(slot.id)) continue;
+                              renderedSlotIds.add(slot.id);
+
+                              const status = slot.status as WorkShiftSlotStatus;
+                              const statusColor = WORK_SHIFT_SLOT_STATUS_COLORS[status] ?? "";
+                              const statusLabel = WORK_SHIFT_SLOT_STATUS_LABELS[status] ?? slot.status;
+                              const name = slot.deliveryman?.name ?? "Sem entregador";
+                              const initials = slot.deliveryman ? getInitials(slot.deliveryman.name) : "??";
+                              const slotPeriodLabels = slot.period
+                                .map((p) => PLANNING_PERIOD_LABELS[p.toUpperCase() as PlanningPeriod])
+                                .filter(Boolean)
+                                .join(" / ");
+
+                              items.push(
+                                <Tooltip key={slot.id}>
+                                  <TooltipTrigger asChild>
+                                    <button type="button" onClick={() => handleSlotClick(slot, dateStr)}>
+                                      <Avatar size="default">
+                                        <AvatarFallback className={cn("text-[10px]", statusColor)}>
+                                          {initials}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <Text variant="small" className="text-center">
+                                      <span>{name}</span>
+                                      <br />
+                                      <span className="text-muted">
+                                        {slotPeriodLabels} - {statusLabel}
+                                        <br />
+                                        {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                      </span>
+                                    </Text>
+                                  </TooltipContent>
+                                </Tooltip>,
+                              );
+                            }
+
+                            for (let idx = 0; idx < vacantCount; idx++) {
+                              items.push(
+                                <Tooltip key={`vacant-${period}-${idx}`}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePlannedClick(dateStr, period)}
+                                      className="flex size-8 items-center justify-center rounded-full border border-dashed border-muted-foreground/40 transition-colors hover:border-primary/60 hover:bg-primary/5"
+                                    >
+                                      <UserIcon className="size-4 text-muted-foreground/60" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Vaga aberta - {PLANNING_PERIOD_LABELS[period]}</TooltipContent>
+                                </Tooltip>,
+                              );
+                            }
+
+                            return items;
+                          });
+                        })()}
 
                         {!isPast && !copySource && (
                           <Tooltip>
