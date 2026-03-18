@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -37,6 +37,8 @@ export function UserForm({ branches, defaultValues, isEditing, onSuccess, redire
   const [formFiles, setFormFiles] = useState<(File | string)[]>(defaultValues?.files ?? []);
   const [isUploading, setIsUploading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const preserveInitialPermissionsRef = useRef(isEditing && defaultValues?.permissions !== undefined);
+  const previousRoleRef = useRef(defaultValues?.role ?? "");
 
   const {
     register,
@@ -89,6 +91,16 @@ export function UserForm({ branches, defaultValues, isEditing, onSuccess, redire
 
   useEffect(() => {
     if (!selectedRole) return;
+
+    if (preserveInitialPermissionsRef.current) {
+      preserveInitialPermissionsRef.current = false;
+      previousRoleRef.current = selectedRole;
+      return;
+    }
+
+    if (previousRoleRef.current === selectedRole) return;
+
+    previousRoleRef.current = selectedRole;
 
     const roleConfig = ROLE_PERMISSIONS.find((r) => r.role === selectedRole);
     if (roleConfig) {
