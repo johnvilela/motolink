@@ -38,6 +38,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Spinner } from "@/components/ui/spinner";
 import { PAYMENT_TYPE_LABELS, PERIOD_TYPE_LABELS } from "@/constants/commercial-conditions";
 import { PLANNING_PERIOD_LABELS, type PlanningPeriod, planningPeriodConst } from "@/constants/planning-period";
+import { compareMonitoringWorkShifts } from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction, sendBulkInviteAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { MonitoringPlanningRow } from "./monitoring-planning-row";
@@ -134,19 +135,6 @@ interface MonitoringClientCardProps {
   onCopy?: () => void;
   onCancelCopy?: () => void;
 }
-
-const STATUS_SORT_ORDER: Record<string, number> = {
-  OPEN: 0,
-  INVITED: 1,
-  CONFIRMED: 2,
-  CHECKED_IN: 3,
-  PENDING_COMPLETION: 4,
-  COMPLETED: 5,
-  ABSENT: 6,
-  UNANSWERED: 7,
-  REJECTED: 8,
-  CANCELLED: 9,
-};
 
 function isNonEmpty(val: unknown): boolean {
   if (val === null || val === undefined) return false;
@@ -279,11 +267,7 @@ export function MonitoringClientCard({
     const planning = plannings.find((p) => p.period === period);
     const plannedCount = planning?.plannedCount ?? 0;
     const periodSlots = workShiftSlots.filter((s) => s.period.some((p) => p.toUpperCase() === period));
-    const sortedSlots = [...periodSlots].sort((a, b) => {
-      const orderA = STATUS_SORT_ORDER[a.status] ?? 99;
-      const orderB = STATUS_SORT_ORDER[b.status] ?? 99;
-      return orderA - orderB;
-    });
+    const sortedSlots = periodSlots.toSorted(compareMonitoringWorkShifts);
     const periodLabel = PLANNING_PERIOD_LABELS[period];
 
     const rows: React.ReactNode[] = [];

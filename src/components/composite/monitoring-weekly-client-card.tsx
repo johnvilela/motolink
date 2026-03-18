@@ -44,6 +44,7 @@ import {
   type WorkShiftSlotStatus,
 } from "@/constants/work-shift-slot-status";
 import { cn } from "@/lib/cn";
+import { compareMonitoringWorkShifts } from "@/modules/monitoring/monitoring-sort";
 import { copyWorkShiftSlotsAction } from "@/modules/work-shift-slots/work-shift-slots-actions";
 import { formatMoneyDisplay } from "@/utils/masks/money-mask";
 import { Text } from "../ui/text";
@@ -387,9 +388,9 @@ export function MonitoringWeeklyClientCard({
                           return periods.flatMap((period) => {
                             const planning = dayData.planned.find((p) => p.period.toUpperCase() === period);
                             const plannedCount = planning?.plannedCount ?? 0;
-                            const periodSlots = dayData.workShifts.filter((s) =>
-                              s.period.some((p) => p.toUpperCase() === period),
-                            );
+                            const periodSlots = dayData.workShifts
+                              .filter((s) => s.period.some((p) => p.toUpperCase() === period))
+                              .toSorted(compareMonitoringWorkShifts);
                             const vacantCount = Math.max(0, plannedCount - periodSlots.length);
 
                             const items: React.ReactNode[] = [];

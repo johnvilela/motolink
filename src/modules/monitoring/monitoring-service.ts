@@ -6,6 +6,7 @@ dayjs.extend(utc);
 
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
+import { compareMonitoringWorkShifts } from "./monitoring-sort";
 import type { MonitoringQueryDTO, MonitoringWeeklyQueryDTO } from "./monitoring-types";
 
 const monitoringClientInclude = {
@@ -93,7 +94,7 @@ export function monitoringService() {
               })
             : [];
         const banLookup = createClientBanLookup(clientBlocks);
-        const workShiftsWithBanState = withClientBanState(workShifts, banLookup);
+        const workShiftsWithBanState = withClientBanState(workShifts, banLookup).toSorted(compareMonitoringWorkShifts);
 
         const plannedByClientId = new Map<string, typeof planned>();
         for (const planning of planned) {
@@ -180,7 +181,7 @@ export function monitoringService() {
               })
             : [];
         const banLookup = createClientBanLookup(clientBlocks);
-        const workShiftsWithBanState = withClientBanState(workShifts, banLookup);
+        const workShiftsWithBanState = withClientBanState(workShifts, banLookup).toSorted(compareMonitoringWorkShifts);
 
         const plannedByClientDate = new Map<string, Map<string, typeof planned>>();
         for (const planning of planned) {
