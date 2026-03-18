@@ -5,7 +5,7 @@ import { AccessDenied } from "@/components/composite/access-denied";
 import { ContentHeader } from "@/components/composite/content-header";
 import { TablePagination } from "@/components/composite/table-pagination";
 import { TextSearch } from "@/components/composite/text-search";
-import { ClientsTable } from "@/components/tables/clients-table";
+import { ClientsList } from "@/components/lists/clients-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cookieConst } from "@/constants/cookies";
@@ -57,7 +57,7 @@ export default async function ClientesPage({ searchParams }: ClientesPageProps) 
               <Link href="/gestao/clientes/novo">Adicionar cliente</Link>
             </Button>
           </div>
-          <ClientsTable clients={result.value.data} />
+          <ClientsList clients={result.value.data} />
           <TablePagination
             page={result.value.pagination.page}
             pageSize={result.value.pagination.pageSize}
