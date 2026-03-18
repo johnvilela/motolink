@@ -239,6 +239,44 @@ export function paymentRequestsService() {
       }
     },
 
+    async getDashboardSummary(shiftDate: Date, branchId: string) {
+      try {
+        const PENDING_STATUSES = ["NEW", "EDITED", "EDITION_APPROVED"];
+
+        const slotIds = await db.workShiftSlot.findMany({
+          where: { shiftDate, client: { branchId } },
+          select: { id: true },
+        });
+
+        if (slotIds.length === 0) {
+          return okAsync({ byStatus: [], totalAmount: 0, pendingCount: 0 });
+        }
+
+        const groups = await db.paymentRequest.groupBy({
+          by: ["status"],
+          where: { workShiftSlotId: { in: slotIds.map((s) => s.id) } },
+          _count: true,
+          _sum: { amount: true },
+        });
+
+        const byStatus = groups.map((g) => ({
+          status: g.status,
+          count: g._count,
+          amount: Number(g._sum.amount ?? 0),
+        }));
+
+        const totalAmount = byStatus.reduce((sum, row) => sum + row.amount, 0);
+        const pendingCount = byStatus
+          .filter((row) => PENDING_STATUSES.includes(row.status))
+          .reduce((sum, row) => sum + row.count, 0);
+
+        return okAsync({ byStatus, totalAmount, pendingCount });
+      } catch (error) {
+        console.error("Error fetching dashboard summary for payment requests:", error);
+        return errAsync({ reason: "Não foi possível buscar o resumo financeiro", statusCode: 500 });
+      }
+    },
+
     async listAll(query: PaymentRequestListQueryDTO) {
       try {
         const { page, pageSize, deliverymanId, workShiftSlotId, status, date, contractType, clientId } = query;

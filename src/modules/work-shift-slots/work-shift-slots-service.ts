@@ -997,6 +997,30 @@ export function workShiftSlotsService() {
       }
     },
 
+    async getDashboardSummary(shiftDate: Date, branchId: string) {
+      try {
+        const CONFIRMED_STATUSES = ["CONFIRMED", "CHECKED_IN", "PENDING_COMPLETION", "COMPLETED"];
+
+        const slots = await db.workShiftSlot.findMany({
+          where: { shiftDate, client: { branchId } },
+          select: { status: true },
+        });
+
+        const countMap = new Map<string, number>();
+        for (const slot of slots) {
+          countMap.set(slot.status, (countMap.get(slot.status) ?? 0) + 1);
+        }
+
+        const byStatus = [...countMap.entries()].map(([status, count]) => ({ status, count }));
+        const confirmedCount = slots.filter((s) => CONFIRMED_STATUSES.includes(s.status)).length;
+
+        return okAsync({ byStatus, total: slots.length, confirmedCount });
+      } catch (error) {
+        console.error("Error fetching dashboard summary for work shift slots:", error);
+        return errAsync({ reason: "Não foi possível buscar o resumo dos turnos", statusCode: 500 });
+      }
+    },
+
     async listDiscountsBySlot(workShiftSlotId: string) {
       try {
         const discounts = await db.discount.findMany({

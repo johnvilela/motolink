@@ -101,3 +101,9 @@ export const workShiftSlotToggleTrackingSchema = z.object({
 });
 
 export type WorkShiftSlotToggleTrackingDTO = z.infer<typeof workShiftSlotToggleTrackingSchema>;
+
+export type WorkShiftSlotDashboardSummary = {
+  byStatus: { status: string; count: number }[];
+  total: number;
+  confirmedCount: number;
+};

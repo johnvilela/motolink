@@ -48,3 +48,9 @@ export const paymentRequestListQuerySchema = z.object({
 });
 
 export type PaymentRequestListQueryDTO = z.infer<typeof paymentRequestListQuerySchema>;
+
+export type PaymentRequestDashboardSummary = {
+  byStatus: { status: string; count: number; amount: number }[];
+  totalAmount: number;
+  pendingCount: number;
+};
