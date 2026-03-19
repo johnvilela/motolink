@@ -201,6 +201,7 @@ export function MonitoringWorkShiftDetailSheet({
   const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
   const isOpenWithoutDeliveryman = status === "OPEN" && !slot.deliveryman;
+  const canEditTimes = !isBannedLocked && (status === "COMPLETED" || !isTerminal);
 
   const isPendingAction = (action: PendingAction) => pendingAction === action;
   const isMutating = pendingAction !== null;
@@ -692,7 +693,7 @@ export function MonitoringWorkShiftDetailSheet({
                   Editar
                 </Button>
               )}
-              {!isTerminal && !isBannedLocked && (
+              {canEditTimes && (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setEditTimesSheetOpen(true)}>
                   <ClockIcon className="mr-1 size-3.5" />
                   Editar horários

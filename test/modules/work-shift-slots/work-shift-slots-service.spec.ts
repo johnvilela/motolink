@@ -945,6 +945,31 @@ describe("Work Shift Slots Service", () => {
   });
 
   describe(".updateTimes", () => {
+    it("should allow editing times for a completed slot", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+      const deliveryman = await createTestDeliveryman({ branchId: branch.id });
+      const created = await createTestWorkShiftSlot({
+        clientId: client.id,
+        deliverymanId: deliveryman.id,
+        status: "COMPLETED",
+      });
+
+      const result = await service.updateTimes(
+        {
+          id: created.id,
+          checkInAt: "08:15",
+          checkOutAt: "18:05",
+        },
+        LOGGED_USER_ID,
+      );
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap().status).toBe("COMPLETED");
+      expect(result._unsafeUnwrap().checkInAt).not.toBeNull();
+      expect(result._unsafeUnwrap().checkOutAt).not.toBeNull();
+    });
+
     it("should allow editing times for a current-day slot that keeps a banned assigned deliveryman", async () => {
       const branch = await createTestBranch();
       const client = await createTestClient({ branchId: branch.id });

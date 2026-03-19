@@ -517,7 +517,7 @@ export function workShiftSlotsService() {
           return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
         }
 
-        const terminalStatuses = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED", "COMPLETED"];
+        const terminalStatuses = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
         if (terminalStatuses.includes(existing.status)) {
           return errAsync({ reason: "Não é possível editar horários de um turno finalizado", statusCode: 400 });
         }

@@ -222,6 +222,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const isBannedAssigned = Boolean(slot.deliveryman && slot.isDeliverymanBannedForClient);
   const isCurrentShiftDate = shiftDate === getCurrentDateKeyInSaoPaulo();
   const isBannedLocked = isBannedAssigned && !isCurrentShiftDate;
+  const canEditTimes = !isBannedLocked && (status === "COMPLETED" || !isTerminal);
   const dimmedInfoClassName = isCancelled ? "opacity-50" : undefined;
   const rowStatusColor = isOpenWithoutDeliveryman
     ? "bg-red-100 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/50 dark:text-red-200 dark:ring-red-900/70"
@@ -531,7 +532,7 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                     Editar turno
                   </DropdownMenuItem>
                 )}
-                {!isTerminal && !isBannedLocked && (
+                {canEditTimes && (
                   <DropdownMenuItem onClick={() => setEditTimesSheetOpen(true)}>
                     <ClockIcon className="mr-2 size-4" />
                     Editar horários
