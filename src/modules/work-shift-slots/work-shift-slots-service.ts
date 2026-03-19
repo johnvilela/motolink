@@ -4,7 +4,11 @@ import { errAsync, okAsync } from "neverthrow";
 import type { Prisma, WorkShiftSlot } from "@/../generated/prisma/client";
 import { contractTypeConst } from "@/constants/contract-type";
 import { historyTraceActionConst, historyTraceEntityConst } from "@/constants/history-trace";
-import { type WorkShiftSlotStatus, workShiftSlotStatusTransitions } from "@/constants/work-shift-slot-status";
+import {
+  type WorkShiftSlotStatus,
+  workShiftSlotStatusConst,
+  workShiftSlotStatusTransitions,
+} from "@/constants/work-shift-slot-status";
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
 import {
@@ -69,7 +73,7 @@ function calculateTotalValueToPay(body: WorkShiftSlotMutateDTO): number {
 }
 
 function validateAssignedDeliverymanForStatus(status: string, deliverymanId?: string | null) {
-  if (status !== "OPEN" && !deliverymanId) {
+  if (status !== workShiftSlotStatusConst.OPEN && status !== workShiftSlotStatusConst.DELETED && !deliverymanId) {
     return {
       reason: "É necessário atribuir um entregador antes de alterar o status do turno",
       statusCode: 400,
@@ -79,7 +83,7 @@ function validateAssignedDeliverymanForStatus(status: string, deliverymanId?: st
   return null;
 }
 
-const TERMINAL_STATUSES = ["CANCELLED", "ABSENT", "REJECTED", "UNANSWERED"];
+const TERMINAL_STATUSES = ["CANCELLED", "ABSENT", "REJECTED", "UNANSWERED", "DELETED"];
 const CLONE_TRIGGER_STATUSES = ["CANCELLED", "ABSENT", "REJECTED", "UNANSWERED"];
 
 function getTodayDateKey() {
@@ -346,7 +350,7 @@ export function workShiftSlotsService() {
           },
         });
 
-        if (!slot) {
+        if (!slot || slot.status === workShiftSlotStatusConst.DELETED) {
           return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
         }
 
@@ -362,19 +366,25 @@ export function workShiftSlotsService() {
         const { page, pageSize, search, clientId, deliverymanId, status, shiftDate, groupId } = query;
         const skip = (page - 1) * pageSize;
 
-        const where = {
-          ...(clientId && { clientId }),
-          ...(deliverymanId && { deliverymanId }),
-          ...(status && { status }),
-          ...(shiftDate && { shiftDate: dateKeyToDbDate(shiftDate) }),
-          ...(groupId && { client: { groupId } }),
-          ...(search && {
-            OR: [
-              { client: { name: { contains: search, mode: "insensitive" as const } } },
-              { deliveryman: { name: { contains: search, mode: "insensitive" as const } } },
-            ],
-          }),
-        };
+        const filters: Prisma.WorkShiftSlotWhereInput[] = [
+          { status: { not: workShiftSlotStatusConst.DELETED } },
+          ...(clientId ? [{ clientId }] : []),
+          ...(deliverymanId ? [{ deliverymanId }] : []),
+          ...(status ? [{ status }] : []),
+          ...(shiftDate ? [{ shiftDate: dateKeyToDbDate(shiftDate) }] : []),
+          ...(groupId ? [{ client: { groupId } }] : []),
+          ...(search
+            ? [
+                {
+                  OR: [
+                    { client: { name: { contains: search, mode: "insensitive" as const } } },
+                    { deliveryman: { name: { contains: search, mode: "insensitive" as const } } },
+                  ],
+                },
+              ]
+            : []),
+        ];
+        const where: Prisma.WorkShiftSlotWhereInput = filters.length === 1 ? filters[0] : { AND: filters };
 
         const [total, data] = await Promise.all([
           db.workShiftSlot.count({ where }),
@@ -517,7 +527,7 @@ export function workShiftSlotsService() {
           return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
         }
 
-        const terminalStatuses = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
+        const terminalStatuses = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED", "DELETED"];
         if (terminalStatuses.includes(existing.status)) {
           return errAsync({ reason: "Não é possível editar horários de um turno finalizado", statusCode: 400 });
         }
@@ -575,7 +585,11 @@ export function workShiftSlotsService() {
         const sourceDbDate = dateKeyToDbDate(sourceDate);
         const targetDbDate = dateKeyToDbDate(targetDate);
         const sourceSlots = await db.workShiftSlot.findMany({
-          where: { clientId, shiftDate: sourceDbDate },
+          where: {
+            clientId,
+            shiftDate: sourceDbDate,
+            status: { not: workShiftSlotStatusConst.DELETED },
+          },
         });
 
         if (sourceSlots.length === 0) {
@@ -707,7 +721,14 @@ export function workShiftSlotsService() {
           return errAsync({ reason: "Turno de trabalho não encontrado", statusCode: 404 });
         }
 
-        await db.workShiftSlot.delete({ where: { id } });
+        if (existing.status !== workShiftSlotStatusConst.OPEN) {
+          return errAsync({ reason: "Apenas turnos abertos podem ser excluídos", statusCode: 400 });
+        }
+
+        const deleted = await db.workShiftSlot.update({
+          where: { id },
+          data: { status: workShiftSlotStatusConst.DELETED },
+        });
 
         historyTracesService()
           .create({
@@ -716,7 +737,7 @@ export function workShiftSlotsService() {
             entityType: historyTraceEntityConst.WORK_SHIFT_SLOT,
             entityId: id,
             oldObject: existing,
-            newObject: existing,
+            newObject: deleted,
           })
           .catch(() => {});
 
@@ -1105,7 +1126,11 @@ export function workShiftSlotsService() {
         const CONFIRMED_STATUSES = ["CONFIRMED", "CHECKED_IN", "PENDING_COMPLETION", "COMPLETED"];
 
         const slots = await db.workShiftSlot.findMany({
-          where: { shiftDate: dateKeyToDbDate(shiftDate), client: { branchId } },
+          where: {
+            shiftDate: dateKeyToDbDate(shiftDate),
+            status: { not: workShiftSlotStatusConst.DELETED },
+            client: { branchId },
+          },
           select: { status: true, contractType: true },
         });
 

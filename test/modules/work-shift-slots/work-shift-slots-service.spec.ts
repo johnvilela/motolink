@@ -358,6 +358,34 @@ describe("Work Shift Slots Service", () => {
           independentCollaborator: 1,
         });
       });
+
+      it("should ignore deleted slots in the summary", async () => {
+        const branch = await createTestBranch();
+        const client = await createTestClient({ branchId: branch.id });
+
+        await createTestWorkShiftSlot({
+          clientId: client.id,
+          contractType: "FREELANCER",
+          shiftDate: dateKeyToDbDate("2099-06-15"),
+        });
+        await createTestWorkShiftSlot({
+          clientId: client.id,
+          contractType: "INDEPENDENT_COLLABORATOR",
+          shiftDate: dateKeyToDbDate("2099-06-15"),
+          status: "DELETED",
+        });
+
+        const result = await service.getDashboardSummary("2099-06-15", branch.id);
+
+        expect(result.isOk()).toBe(true);
+        expect(result._unsafeUnwrap()).toMatchObject({
+          total: 1,
+          byContractType: {
+            freelancer: 1,
+            independentCollaborator: 0,
+          },
+        });
+      });
     });
 
     it("should block create when overlapping slot exists for same deliveryman", async () => {
@@ -1221,7 +1249,7 @@ describe("Work Shift Slots Service", () => {
   });
 
   describe(".delete", () => {
-    it("should hard delete the work shift slot successfully", async () => {
+    it("should soft delete an open work shift slot successfully", async () => {
       const created = await createTestWorkShiftSlot();
 
       const result = await service.delete(created.id, LOGGED_USER_ID);
@@ -1230,7 +1258,21 @@ describe("Work Shift Slots Service", () => {
       expect(result._unsafeUnwrap().id).toBe(created.id);
 
       const found = await db.workShiftSlot.findUnique({ where: { id: created.id } });
-      expect(found).toBeNull();
+      expect(found?.status).toBe("DELETED");
+
+      const listResult = await service.listAll({ page: 1, pageSize: 10 });
+      expect(listResult.isOk()).toBe(true);
+      expect(listResult._unsafeUnwrap().data).toHaveLength(0);
+    });
+
+    it("should return 400 when trying to delete a non-open work shift slot", async () => {
+      const created = await createTestWorkShiftSlot({ status: "INVITED" });
+
+      const result = await service.delete(created.id, LOGGED_USER_ID);
+
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().statusCode).toBe(400);
+      expect(result._unsafeUnwrapErr().reason).toBe("Apenas turnos abertos podem ser excluídos");
     });
 
     it("should return 404 when entity is not found", async () => {

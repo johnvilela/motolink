@@ -22,12 +22,13 @@ export const workShiftSlotStatusConst = {
   CANCELLED: "CANCELLED",
   REJECTED: "REJECTED",
   UNANSWERED: "UNANSWERED",
+  DELETED: "DELETED",
 } as const;
 
 export type WorkShiftSlotStatus = (typeof workShiftSlotStatusConst)[keyof typeof workShiftSlotStatusConst];
 
 export const workShiftSlotStatusTransitions: Record<WorkShiftSlotStatus, WorkShiftSlotStatus[]> = {
-  OPEN: ["INVITED", "CANCELLED"],
+  OPEN: ["INVITED", "CANCELLED", "DELETED"],
   INVITED: ["CONFIRMED", "REJECTED", "CANCELLED", "UNANSWERED"],
   CONFIRMED: ["CHECKED_IN", "ABSENT", "CANCELLED"],
   CHECKED_IN: ["PENDING_COMPLETION", "ABSENT", "CANCELLED"],
@@ -37,6 +38,7 @@ export const workShiftSlotStatusTransitions: Record<WorkShiftSlotStatus, WorkShi
   ABSENT: [],
   CANCELLED: [],
   UNANSWERED: [],
+  DELETED: [],
 };
 
 export const WORK_SHIFT_SLOT_STATUS_LABELS: Record<WorkShiftSlotStatus, string> = {
@@ -50,6 +52,7 @@ export const WORK_SHIFT_SLOT_STATUS_LABELS: Record<WorkShiftSlotStatus, string> 
   CANCELLED: "Cancelado",
   REJECTED: "Rejeitado",
   UNANSWERED: "Sem resposta",
+  DELETED: "Excluído",
 };
 
 export const WORK_SHIFT_SLOT_PRIMARY_ACTION_LABELS: Partial<Record<WorkShiftSlotStatus, string>> = {
@@ -71,6 +74,7 @@ export const WORK_SHIFT_SLOT_STATUS_COLORS: Record<WorkShiftSlotStatus, string> 
   CANCELLED: "bg-zinc-100 text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200",
   REJECTED: "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-200",
   UNANSWERED: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200",
+  DELETED: "bg-zinc-100 text-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200",
 };
 
 export const WORK_SHIFT_SLOT_STATUS_ICONS: Record<WorkShiftSlotStatus, typeof CheckIcon> = {
@@ -84,4 +88,5 @@ export const WORK_SHIFT_SLOT_STATUS_ICONS: Record<WorkShiftSlotStatus, typeof Ch
   CANCELLED: XCircleIcon,
   REJECTED: XIcon,
   UNANSWERED: MessageCircleOffIcon,
+  DELETED: XCircleIcon,
 };

@@ -93,7 +93,13 @@ async function createTestPlanning(
 }
 
 async function createTestWorkShiftSlot(
-  overrides: { clientId?: string; shiftDate?: string; deliverymanId?: string; deliverymenPaymentValue?: string } = {},
+  overrides: {
+    clientId?: string;
+    shiftDate?: string;
+    deliverymanId?: string;
+    deliverymenPaymentValue?: string;
+    status?: string;
+  } = {},
 ) {
   const clientId = overrides.clientId ?? (await createTestClient()).id;
 
@@ -101,7 +107,7 @@ async function createTestWorkShiftSlot(
     data: {
       clientId,
       deliverymanId: overrides.deliverymanId,
-      status: "OPEN",
+      status: overrides.status ?? "OPEN",
       contractType: "CLT",
       shiftDate: toMonitoringDateTime(overrides.shiftDate ?? TARGET_DATE),
       startTime: START_TIME,
@@ -225,6 +231,33 @@ describe("Monitoring Service", () => {
       expect(payload.clients.find((item) => item.id === clientFromGroup.id)?.workShifts).toHaveLength(0);
       expect(payload.clients.find((item) => item.id === anotherClientFromGroup.id)?.planned).toHaveLength(1);
       expect(payload.clients.find((item) => item.id === anotherClientFromGroup.id)?.workShifts).toHaveLength(1);
+    });
+
+    it("should exclude deleted work shifts from the monitoring payload", async () => {
+      const branch = await createTestBranch();
+      const client = await createTestClient({ branchId: branch.id });
+
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        shiftDate: TARGET_DATE,
+        deliverymenPaymentValue: "100.00",
+      });
+      await createTestWorkShiftSlot({
+        clientId: client.id,
+        shiftDate: TARGET_DATE,
+        deliverymenPaymentValue: "200.00",
+        status: "DELETED",
+      });
+
+      const result = await service.getDaily({
+        branchId: branch.id,
+        clientId: client.id,
+        targetDate: TARGET_DATE,
+      });
+
+      expect(result.isOk()).toBe(true);
+      expect(result._unsafeUnwrap().clients[0].workShifts).toHaveLength(1);
+      expect(result._unsafeUnwrap().clients[0].workShifts[0].deliverymenPaymentValue).toBe("100.00");
     });
 
     it("should return an empty clients array when the filter matches no active clients", async () => {
