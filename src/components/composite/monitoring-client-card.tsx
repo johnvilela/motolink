@@ -143,7 +143,7 @@ interface MonitoringClientCardProps {
   onCancelCopy?: () => void;
 }
 
-const HIDDEN_WORK_SHIFT_STATUSES = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED"];
+const HIDDEN_WORK_SHIFT_STATUSES = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED", "DELETED"];
 
 function isNonEmpty(val: unknown): boolean {
   if (val === null || val === undefined) return false;

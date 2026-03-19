@@ -178,7 +178,14 @@ export function MonitoringWorkShiftDetailSheet({
       .finally(() => setTracesLoading(false));
   }, [open, slot.id]);
 
-  const terminalStatuses: WorkShiftSlotStatus[] = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED", "COMPLETED"];
+  const terminalStatuses: WorkShiftSlotStatus[] = [
+    "ABSENT",
+    "CANCELLED",
+    "REJECTED",
+    "UNANSWERED",
+    "COMPLETED",
+    "DELETED",
+  ];
   const status = slot.status as WorkShiftSlotStatus;
   const isTerminal = terminalStatuses.includes(status);
   const statusLabel = WORK_SHIFT_SLOT_STATUS_LABELS[status] ?? slot.status;

@@ -4,6 +4,7 @@ import { errAsync, okAsync } from "neverthrow";
 
 dayjs.extend(utc);
 
+import { workShiftSlotStatusConst } from "@/constants/work-shift-slot-status";
 import { db } from "@/lib/database";
 import { convertDecimals } from "@/utils/convert-decimals";
 import { dateKeyToDbDate, dbDateToDateKey } from "@/utils/date-time";
@@ -75,6 +76,7 @@ export function monitoringService() {
             where: {
               clientId: { in: clientIds },
               shiftDate: targetDateTime,
+              status: { not: workShiftSlotStatusConst.DELETED },
             },
             orderBy: [{ clientId: "asc" }, { createdAt: "desc" }],
             include: monitoringWorkShiftInclude,
@@ -162,6 +164,7 @@ export function monitoringService() {
             where: {
               clientId: { in: clientIds },
               shiftDate: { gte: startDateTime, lte: endDateTime },
+              status: { not: workShiftSlotStatusConst.DELETED },
             },
             orderBy: [{ clientId: "asc" }, { shiftDate: "asc" }, { createdAt: "desc" }],
             include: monitoringWorkShiftInclude,

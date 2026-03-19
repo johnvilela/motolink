@@ -236,6 +236,31 @@ export const sendBulkInviteAction = safeAction.inputSchema(sendBulkInviteSchema)
   return { success: true, sentCount: result.value.sentCount };
 });
 
+const deleteWorkShiftSlotInputSchema = z.object({
+  id: z.string().uuid({ message: "ID do turno inválido" }),
+});
+
+export const deleteWorkShiftSlotAction = safeAction
+  .inputSchema(deleteWorkShiftSlotInputSchema)
+  .action(async ({ parsedInput }) => {
+    const cookieStore = await cookies();
+    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+
+    if (!loggedUserId) {
+      return { error: "Usuário não autenticado" };
+    }
+
+    const result = await workShiftSlotsService().delete(parsedInput.id, loggedUserId);
+
+    if (result.isErr()) {
+      return { error: result.error.reason };
+    }
+
+    revalidatePath("/operacional/monitoramento/diario");
+    revalidatePath("/operacional/monitoramento/semanal");
+    return { success: true };
+  });
+
 export const toggleTrackingConnectedAction = safeAction
   .inputSchema(workShiftSlotToggleTrackingSchema)
   .action(async ({ parsedInput }) => {

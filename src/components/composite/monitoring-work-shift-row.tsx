@@ -55,6 +55,7 @@ import {
 import { cn } from "@/lib/cn";
 import { banDeliverymanAction } from "@/modules/client-blocks/client-blocks-actions";
 import {
+  deleteWorkShiftSlotAction,
   sendInviteAction,
   toggleTrackingConnectedAction,
   updateWorkShiftSlotStatusAction,
@@ -109,7 +110,8 @@ type PendingAction =
   | "end-shift"
   | "send-invite"
   | "toggle-tracking"
-  | "ban-deliveryman";
+  | "ban-deliveryman"
+  | "delete-shift";
 
 const WORK_SHIFT_SLOT_ROW_BORDER_COLORS: Record<WorkShiftSlotStatus, string> = {
   OPEN: "border-l-slate-300",
@@ -122,6 +124,7 @@ const WORK_SHIFT_SLOT_ROW_BORDER_COLORS: Record<WorkShiftSlotStatus, string> = {
   CANCELLED: "border-l-zinc-400",
   REJECTED: "border-l-red-400",
   UNANSWERED: "border-l-rose-400",
+  DELETED: "border-l-zinc-300",
 };
 
 export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: MonitoringWorkShiftRowProps) {
@@ -136,12 +139,14 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
   const [absentReason, setAbsentReason] = useState("");
   const [endShiftDialogOpen, setEndShiftDialogOpen] = useState(false);
   const [inviteConfirmOpen, setInviteConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const mutationLockRef = useRef(false);
   const { executeAsync } = useAction(updateWorkShiftSlotStatusAction);
   const { executeAsync: executeBanDeliveryman } = useAction(banDeliverymanAction);
   const { executeAsync: executeSendInvite } = useAction(sendInviteAction);
   const { executeAsync: executeToggleTracking } = useAction(toggleTrackingConnectedAction);
+  const { executeAsync: executeDeleteShift } = useAction(deleteWorkShiftSlotAction);
 
   const status = slot.status as WorkShiftSlotStatus;
   const statusLabel = WORK_SHIFT_SLOT_STATUS_LABELS[status] ?? slot.status;
@@ -213,7 +218,14 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
     }
   };
 
-  const terminalStatuses: WorkShiftSlotStatus[] = ["ABSENT", "CANCELLED", "REJECTED", "UNANSWERED", "COMPLETED"];
+  const terminalStatuses: WorkShiftSlotStatus[] = [
+    "ABSENT",
+    "CANCELLED",
+    "REJECTED",
+    "UNANSWERED",
+    "COMPLETED",
+    "DELETED",
+  ];
   const isTerminal = terminalStatuses.includes(status);
   const isAbsent = status === "ABSENT";
   const isUnanswered = status === "UNANSWERED";
@@ -261,6 +273,19 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
     setBanSheetOpen(false);
     setBanReason("");
     onRefresh?.();
+  };
+
+  const handleDeleteShift = async () => {
+    const result = await runMutation("delete-shift", () => executeDeleteShift({ id: slot.id }));
+    if (!result) return;
+
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+    } else {
+      toast.success("Turno excluído com sucesso");
+      setDeleteConfirmOpen(false);
+      onRefresh?.();
+    }
   };
 
   return (
@@ -562,6 +587,12 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
                     Banir entregador
                   </DropdownMenuItem>
                 )}
+                {status === "OPEN" && (
+                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmOpen(true)}>
+                    <Trash2Icon className="mr-2 size-4" />
+                    Excluir turno
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -719,6 +750,25 @@ export function MonitoringWorkShiftRow({ slot, client, shiftDate, onRefresh }: M
             >
               {isPendingAction("mark-absent") ? <Spinner className="mr-1 size-3" /> : null}
               Confirmar ausência
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete shift confirmation dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir turno</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este turno? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteShift} disabled={isMutating}>
+              {isPendingAction("delete-shift") ? <Spinner className="mr-1 size-3" /> : null}
+              Excluir turno
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
