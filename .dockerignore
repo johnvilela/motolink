@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+test
+vitest.config.ts
+biome.json
+.husky
+docker-compose.yml
+Procfile
+ai
+.agents
+.claude
+.github
