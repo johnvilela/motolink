@@ -9,7 +9,7 @@ const prismaClientSingleton = () => {
 
   const pool = new Pool({
     connectionString,
-    ssl: isProd ? { rejectUnauthorized: false } : undefined,
+    // ssl: isProd ? { rejectUnauthorized: false } : undefined,
   });
 
   const adapter = new PrismaPg(pool);
