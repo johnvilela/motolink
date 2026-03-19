@@ -29,6 +29,6 @@ export const upsertPlanningAction = safeAction
       return { error: result.error.reason };
     }
 
-    revalidatePath("/operacional/planejamento");
+    revalidatePath("/operacional/planejamento", "page");
     return { success: true };
   });

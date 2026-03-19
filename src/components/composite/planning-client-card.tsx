@@ -2,8 +2,9 @@
 
 import dayjs from "dayjs";
 import { CheckIcon, UtensilsIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,40 +112,45 @@ interface PlanningCellProps {
 }
 
 function PlanningCell({ clientId, dateStr, period, value, disabled }: PlanningCellProps) {
+  const router = useRouter();
   const { executeAsync, isExecuting } = useAction(upsertPlanningAction);
   const [showCheck, setShowCheck] = useState(false);
+  const [inputValue, setInputValue] = useState(value.toString());
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const inputId = `planning-${clientId}-${dateStr}-${period}`;
 
-  const handleBlur = useCallback(
-    async (e: React.FocusEvent<HTMLInputElement>) => {
-      const newCount = Number.parseInt(e.currentTarget.value, 10);
+  useEffect(() => {
+    setInputValue(value.toString());
+  }, [value]);
 
-      if (Number.isNaN(newCount) || newCount < 0) {
-        e.currentTarget.value = value.toString();
-        return;
-      }
+  const handleBlur = useCallback(async () => {
+    const newCount = Number.parseInt(inputValue, 10);
 
-      if (newCount === value) return;
+    if (Number.isNaN(newCount) || newCount < 0) {
+      setInputValue(value.toString());
+      return;
+    }
 
-      const actionResult = await executeAsync({
-        clientId,
-        plannedDate: dateStr,
-        plannedCount: newCount,
-        period,
-      });
+    if (newCount === value) return;
 
-      if (actionResult?.data?.error) {
-        toast.error(actionResult.data.error);
-      } else {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        setShowCheck(true);
-        timerRef.current = setTimeout(() => setShowCheck(false), 2000);
-      }
-    },
-    [clientId, dateStr, period, value, executeAsync],
-  );
+    const actionResult = await executeAsync({
+      clientId,
+      plannedDate: dateStr,
+      plannedCount: newCount,
+      period,
+    });
+
+    if (actionResult?.data?.error) {
+      setInputValue(value.toString());
+      toast.error(actionResult.data.error);
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setShowCheck(true);
+      timerRef.current = setTimeout(() => setShowCheck(false), 2000);
+      router.refresh();
+    }
+  }, [clientId, dateStr, executeAsync, inputValue, period, router, value]);
 
   return (
     <div className="relative w-full">
@@ -152,7 +158,8 @@ function PlanningCell({ clientId, dateStr, period, value, disabled }: PlanningCe
         id={inputId}
         type="number"
         min={0}
-        defaultValue={value}
+        value={inputValue}
+        onChange={(event) => setInputValue(event.target.value)}
         onBlur={handleBlur}
         disabled={disabled}
         className={cn(
