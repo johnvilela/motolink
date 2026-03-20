@@ -31,7 +31,6 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=build /app/public ./public
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=build /script ./script
 
 # Prisma: schema + migrations for runtime migrate deploy
 COPY --from=build /app/prisma ./prisma
@@ -41,6 +40,9 @@ COPY --from=build /app/node_modules/.pnpm node_modules/.pnpm
 COPY --from=build /app/node_modules/prisma node_modules/prisma
 COPY --from=build /app/node_modules/@prisma node_modules/@prisma
 COPY --from=build /app/node_modules/dotenv node_modules/dotenv
+COPY --from=build /app/scripts ./scripts
+
+RUN pnpm add firebase
 
 USER nextjs
 EXPOSE 3000
