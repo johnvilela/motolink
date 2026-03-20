@@ -40,12 +40,16 @@ export function usersService() {
             },
           });
 
-          // if (user.phone) {
-          //   await whatsapp().usersInvite(user.phone, {
-          //     token,
-          //     name: user.name,
-          //   });
-          // }
+          if (user.phone && data.branches?.length > 0) {
+            whatsappService()
+              .sendInvite({
+                phone: user.phone,
+                branchId: data.branches[0],
+                type: whatsappMessageTypeConst.FORGOT_PASSWORD,
+                content: { token, userId: user.id, name: user.name },
+              })
+              .catch(() => {});
+          }
         }
 
         historyTracesService()
