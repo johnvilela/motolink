@@ -77,6 +77,13 @@ Each module has up to 3 files (no barrel `index.ts`):
 - **UI**: shadcn/ui + radix-ui primitives; `cn()` for className merging
 - **Routing**: Portuguese URL segments (`/gestao/colaboradores`, `/gestao/clientes`)
 
+## Versioning
+
+After completing a task, update the `version` field in `package.json`:
+- **Patch** (e.g. 1.0.0 → 1.0.1): bug fixes, refactors, small changes
+- **Minor** (e.g. 1.0.0 → 1.1.0): new features or significant enhancements
+- The **major** version is updated manually
+
 ## AI Skills
 
 Detailed scaffolding guides live in `ai/skills/`:
