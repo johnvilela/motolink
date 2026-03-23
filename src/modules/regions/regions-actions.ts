@@ -1,25 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { regionsService } from "./regions-service";
 import { regionFormSchema } from "./regions-types";
 
 export const mutateRegionAction = safeAction.inputSchema(regionFormSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-  const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  if (!branchId) {
-    return { error: "Filial não selecionada" };
-  }
+  const { userId, branchId } = await verifyActionSession({ requireBranch: true });
 
   const payload = {
     name: parsedInput.name,
@@ -28,7 +17,7 @@ export const mutateRegionAction = safeAction.inputSchema(regionFormSchema).actio
   };
 
   if (parsedInput.id) {
-    const result = await regionsService().update(parsedInput.id, payload, loggedUserId);
+    const result = await regionsService().update(parsedInput.id, payload, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -39,7 +28,7 @@ export const mutateRegionAction = safeAction.inputSchema(regionFormSchema).actio
     return { success: true };
   }
 
-  const result = await regionsService().create(payload, loggedUserId);
+  const result = await regionsService().create(payload, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -50,14 +39,9 @@ export const mutateRegionAction = safeAction.inputSchema(regionFormSchema).actio
 });
 
 export async function deleteRegionAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await regionsService().delete(id, loggedUserId);
+  const result = await regionsService().delete(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };

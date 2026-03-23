@@ -3,8 +3,10 @@ ignoredBuiltDependencies:
   - unrs-resolver
 
 onlyBuiltDependencies:
+  - '@firebase/util'
   - '@prisma/engines'
   - argon2
   - esbuild
   - msw
   - prisma
+  - protobufjs

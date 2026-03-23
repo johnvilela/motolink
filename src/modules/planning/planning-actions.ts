@@ -1,29 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { planningService } from "./planning-service";
 import { planningUpsertInputSchema } from "./planning-types";
 
 export const upsertPlanningAction = safeAction
   .inputSchema(planningUpsertInputSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-    const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
+    const { userId, branchId } = await verifyActionSession({ requireBranch: true });
 
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
-
-    if (!branchId) {
-      return { error: "Filial não selecionada" };
-    }
-
-    const result = await planningService().upsert({ ...parsedInput, branchId }, loggedUserId);
+    const result = await planningService().upsert({ ...parsedInput, branchId }, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };

@@ -1,13 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { z } from "zod";
 
-import { cookieConst } from "@/constants/cookies";
 import { historyTraceEntityConst } from "@/constants/history-trace";
 import { db } from "@/lib/database";
 import { safeAction } from "@/lib/safe-action";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { historyTracesService } from "../history-traces/history-traces-service";
 import { workShiftSlotsService } from "./work-shift-slots-service";
 import {
@@ -37,12 +36,7 @@ const mutateInputSchema = workShiftSlotMutateSchema.extend({
 export const updateWorkShiftSlotStatusAction = safeAction
   .inputSchema(updateStatusInputSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
+    const { userId } = await verifyActionSession();
 
     if (parsedInput.status === "ABSENT" && !parsedInput.absentReason?.trim()) {
       return { error: "Motivo da ausência é obrigatório" };
@@ -55,7 +49,7 @@ export const updateWorkShiftSlotStatusAction = safeAction
     const result = await workShiftSlotsService().updateStatus(
       parsedInput.id,
       parsedInput.status,
-      loggedUserId,
+      userId,
       parsedInput.absentReason,
       parsedInput.cancelledReason,
       parsedInput.shouldClone,
@@ -73,14 +67,9 @@ export const updateWorkShiftSlotStatusAction = safeAction
 export const updateWorkShiftSlotTimesAction = safeAction
   .inputSchema(workShiftSlotUpdateTimesSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+    const { userId } = await verifyActionSession();
 
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
-
-    const result = await workShiftSlotsService().updateTimes(parsedInput, loggedUserId);
+    const result = await workShiftSlotsService().updateTimes(parsedInput, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -92,15 +81,10 @@ export const updateWorkShiftSlotTimesAction = safeAction
   });
 
 export const mutateWorkShiftSlotAction = safeAction.inputSchema(mutateInputSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
+  const { userId } = await verifyActionSession();
 
   const { id, ...body } = parsedInput;
-  const result = await workShiftSlotsService().upsert(id, body, loggedUserId);
+  const result = await workShiftSlotsService().upsert(id, body, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -111,14 +95,9 @@ export const mutateWorkShiftSlotAction = safeAction.inputSchema(mutateInputSchem
 });
 
 export const createDiscountAction = safeAction.inputSchema(discountMutateSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const user = await db.user.findUnique({ where: { id: loggedUserId }, select: { id: true, name: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
 
   if (!user) {
     return { error: "Usuário não encontrado" };
@@ -136,14 +115,9 @@ export const createDiscountAction = safeAction.inputSchema(discountMutateSchema)
 });
 
 export const cancelDiscountAction = safeAction.inputSchema(discountCancelSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const user = await db.user.findUnique({ where: { id: loggedUserId }, select: { id: true, name: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
 
   if (!user) {
     return { error: "Usuário não encontrado" };
@@ -163,18 +137,13 @@ export const cancelDiscountAction = safeAction.inputSchema(discountCancelSchema)
 export const copyWorkShiftSlotsAction = safeAction
   .inputSchema(workShiftSlotCopySchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
+    const { userId } = await verifyActionSession();
 
     const result = await workShiftSlotsService().copySlots(
       parsedInput.sourceDate,
       parsedInput.targetDate,
       parsedInput.clientId,
-      loggedUserId,
+      userId,
     );
 
     if (result.isErr()) {
@@ -187,14 +156,9 @@ export const copyWorkShiftSlotsAction = safeAction
   });
 
 export const sendInviteAction = safeAction.inputSchema(sendInviteSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await workShiftSlotsService().sendInvite(parsedInput.workShiftSlotId, loggedUserId);
+  const result = await workShiftSlotsService().sendInvite(parsedInput.workShiftSlotId, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -216,18 +180,9 @@ export const respondToInviteAction = safeAction.inputSchema(respondToInviteSchem
 });
 
 export const sendBulkInviteAction = safeAction.inputSchema(sendBulkInviteSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await workShiftSlotsService().sendBulkInvite(
-    parsedInput.clientId,
-    parsedInput.shiftDate,
-    loggedUserId,
-  );
+  const result = await workShiftSlotsService().sendBulkInvite(parsedInput.clientId, parsedInput.shiftDate, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -245,14 +200,9 @@ const deleteWorkShiftSlotInputSchema = z.object({
 export const deleteWorkShiftSlotAction = safeAction
   .inputSchema(deleteWorkShiftSlotInputSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+    const { userId } = await verifyActionSession();
 
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
-
-    const result = await workShiftSlotsService().delete(parsedInput.id, loggedUserId);
+    const result = await workShiftSlotsService().delete(parsedInput.id, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -266,12 +216,7 @@ export const deleteWorkShiftSlotAction = safeAction
 export const toggleTrackingConnectedAction = safeAction
   .inputSchema(workShiftSlotToggleTrackingSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
+    const { userId } = await verifyActionSession();
 
     const slot = await db.workShiftSlot.findUnique({
       where: { id: parsedInput.id },
@@ -293,7 +238,7 @@ export const toggleTrackingConnectedAction = safeAction
 
     historyTracesService()
       .create({
-        userId: loggedUserId,
+        userId,
         action: "UPDATED",
         entityType: historyTraceEntityConst.WORK_SHIFT_SLOT,
         entityId: updated.id,

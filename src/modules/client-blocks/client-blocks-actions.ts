@@ -1,22 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { clientBlocksService } from "./client-blocks-service";
 import { clientBlockDeleteSchema, clientBlockMutateSchema } from "./client-blocks-types";
 
 export const banDeliverymanAction = safeAction.inputSchema(clientBlockMutateSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await clientBlocksService().ban(parsedInput, loggedUserId);
+  const result = await clientBlocksService().ban(parsedInput, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -31,14 +25,9 @@ export const banDeliverymanAction = safeAction.inputSchema(clientBlockMutateSche
 export const unbanDeliverymanAction = safeAction
   .inputSchema(clientBlockDeleteSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+    const { userId } = await verifyActionSession();
 
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
-
-    const result = await clientBlocksService().unban(parsedInput, loggedUserId);
+    const result = await clientBlocksService().unban(parsedInput, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };

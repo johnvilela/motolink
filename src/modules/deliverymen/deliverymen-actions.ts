@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
 import { cleanMask } from "@/utils/masks/clean-mask";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { deliverymenService } from "./deliverymen-service";
 import { deliverymanFormSchema } from "./deliverymen-types";
 
@@ -14,17 +13,7 @@ function normalizeOptional(value?: string) {
 }
 
 export const mutateDeliverymanAction = safeAction.inputSchema(deliverymanFormSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-  const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  if (!branchId) {
-    return { error: "Filial não selecionada" };
-  }
+  const { userId, branchId } = await verifyActionSession({ requireBranch: true });
 
   const payload = {
     name: parsedInput.name.trim(),
@@ -45,7 +34,7 @@ export const mutateDeliverymanAction = safeAction.inputSchema(deliverymanFormSch
   };
 
   if (parsedInput.id) {
-    const result = await deliverymenService().update(parsedInput.id, payload, loggedUserId);
+    const result = await deliverymenService().update(parsedInput.id, payload, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -56,7 +45,7 @@ export const mutateDeliverymanAction = safeAction.inputSchema(deliverymanFormSch
     return { success: true, id: parsedInput.id };
   }
 
-  const result = await deliverymenService().create(payload, loggedUserId);
+  const result = await deliverymenService().create(payload, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -68,14 +57,9 @@ export const mutateDeliverymanAction = safeAction.inputSchema(deliverymanFormSch
 });
 
 export async function deleteDeliverymanAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await deliverymenService().delete(id, loggedUserId);
+  const result = await deliverymenService().delete(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -86,14 +70,9 @@ export async function deleteDeliverymanAction(id: string) {
 }
 
 export async function toggleBlockDeliverymanAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await deliverymenService().toggleBlock(id, loggedUserId);
+  const result = await deliverymenService().toggleBlock(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };

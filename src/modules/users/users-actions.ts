@@ -3,23 +3,17 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
 import { cleanMask } from "@/utils/masks/clean-mask";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { usersService } from "./users-service";
 import { changePasswordSchema, forgotPasswordSchema, newPasswordSchema, userMutateSchema } from "./users-types";
 
 dayjs.extend(customParseFormat);
 
 export const mutateUserAction = safeAction.inputSchema(userMutateSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
+  const { userId } = await verifyActionSession();
 
   const payload = {
     name: parsedInput.name,
@@ -34,7 +28,7 @@ export const mutateUserAction = safeAction.inputSchema(userMutateSchema).action(
   };
 
   if (parsedInput.id) {
-    const result = await usersService().update(parsedInput.id, payload, loggedUserId);
+    const result = await usersService().update(parsedInput.id, payload, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -45,7 +39,7 @@ export const mutateUserAction = safeAction.inputSchema(userMutateSchema).action(
     return { success: true };
   }
 
-  const result = await usersService().create(payload, loggedUserId);
+  const result = await usersService().create(payload, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -66,14 +60,9 @@ export const newPasswordAction = safeAction.inputSchema(newPasswordSchema).actio
 });
 
 export const changePasswordAction = safeAction.inputSchema(changePasswordSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  if (loggedUserId !== parsedInput.userId) {
+  if (userId !== parsedInput.userId) {
     return { error: "Você só pode alterar sua própria senha" };
   }
 
@@ -91,14 +80,9 @@ export const changePasswordAction = safeAction.inputSchema(changePasswordSchema)
 });
 
 export async function toggleBlockUserAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await usersService().toggleBlock(id, loggedUserId);
+  const result = await usersService().toggleBlock(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -110,14 +94,9 @@ export async function toggleBlockUserAction(id: string) {
 }
 
 export async function deleteUserAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await usersService().delete(id, loggedUserId);
+  const result = await usersService().delete(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };

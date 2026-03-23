@@ -1,20 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { z } from "zod";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
 import { usersService } from "@/modules/users/users-service";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { paymentRequestsService } from "./payment-requests-service";
 import { paymentRequestListQuerySchema, paymentRequestUpdateSchema } from "./payment-requests-types";
 
 export const listPaymentRequestsAction = safeAction
   .inputSchema(paymentRequestListQuerySchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
+    const { branchId } = await verifyActionSession();
+
     const result = await paymentRequestsService().listAll({ ...parsedInput, branchId });
 
     if (result.isErr()) {
@@ -31,6 +30,8 @@ const getByIdInputSchema = z.object({
 export const getPaymentRequestByIdAction = safeAction
   .inputSchema(getByIdInputSchema)
   .action(async ({ parsedInput }) => {
+    await verifyActionSession();
+
     const result = await paymentRequestsService().getById(parsedInput.id);
 
     if (result.isErr()) {
@@ -45,15 +46,10 @@ const updateInputSchema = paymentRequestUpdateSchema.extend({
 });
 
 export const updatePaymentRequestAction = safeAction.inputSchema(updateInputSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
+  const { userId } = await verifyActionSession();
 
   const { id, ...body } = parsedInput;
-  const result = await paymentRequestsService().update(id, body, loggedUserId);
+  const result = await paymentRequestsService().update(id, body, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -74,15 +70,10 @@ const updateStatusInputSchema = z.object({
 export const updatePaymentRequestStatusAction = safeAction
   .inputSchema(updateStatusInputSchema)
   .action(async ({ parsedInput }) => {
-    const cookieStore = await cookies();
-    const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-
-    if (!loggedUserId) {
-      return { error: "Usuário não autenticado" };
-    }
+    const { userId } = await verifyActionSession();
 
     const [userResult, prResult] = await Promise.all([
-      usersService().getById(loggedUserId),
+      usersService().getById(userId),
       paymentRequestsService().getById(parsedInput.id),
     ]);
 
@@ -97,7 +88,7 @@ export const updatePaymentRequestStatusAction = safeAction
     const result = await paymentRequestsService().updateStatus(
       parsedInput.id,
       parsedInput.status,
-      loggedUserId,
+      userId,
       parsedInput.additionalKm,
     );
 

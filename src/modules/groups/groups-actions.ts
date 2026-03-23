@@ -1,25 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { groupsService } from "./groups-service";
 import { groupFormSchema } from "./groups-types";
 
 export const mutateGroupAction = safeAction.inputSchema(groupFormSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-  const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  if (!branchId) {
-    return { error: "Filial não selecionada" };
-  }
+  const { userId, branchId } = await verifyActionSession({ requireBranch: true });
 
   const payload = {
     name: parsedInput.name,
@@ -28,7 +17,7 @@ export const mutateGroupAction = safeAction.inputSchema(groupFormSchema).action(
   };
 
   if (parsedInput.id) {
-    const result = await groupsService().update(parsedInput.id, payload, loggedUserId);
+    const result = await groupsService().update(parsedInput.id, payload, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -39,7 +28,7 @@ export const mutateGroupAction = safeAction.inputSchema(groupFormSchema).action(
     return { success: true };
   }
 
-  const result = await groupsService().create(payload, loggedUserId);
+  const result = await groupsService().create(payload, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -50,14 +39,9 @@ export const mutateGroupAction = safeAction.inputSchema(groupFormSchema).action(
 });
 
 export async function deleteGroupAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await groupsService().delete(id, loggedUserId);
+  const result = await groupsService().delete(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };

@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 
-import { cookieConst } from "@/constants/cookies";
 import { safeAction } from "@/lib/safe-action";
 import { cleanMask } from "@/utils/masks/clean-mask";
+import { verifyActionSession } from "@/utils/verify-action-session";
 import { clientsService } from "./clients-service";
 import { clientFormSchema } from "./clients-types";
 
@@ -14,17 +13,7 @@ function normalizeOptional(value?: string) {
 }
 
 export const mutateClientAction = safeAction.inputSchema(clientFormSchema).action(async ({ parsedInput }) => {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
-  const branchId = cookieStore.get(cookieConst.SELECTED_BRANCH)?.value;
-
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  if (!branchId) {
-    return { error: "Filial não selecionada" };
-  }
+  const { userId, branchId } = await verifyActionSession({ requireBranch: true });
 
   const clientData = {
     name: parsedInput.name.trim(),
@@ -77,7 +66,7 @@ export const mutateClientAction = safeAction.inputSchema(clientFormSchema).actio
   };
 
   if (parsedInput.id) {
-    const result = await clientsService().update(parsedInput.id, { ...clientData, ...commData }, loggedUserId);
+    const result = await clientsService().update(parsedInput.id, { ...clientData, ...commData }, userId);
 
     if (result.isErr()) {
       return { error: result.error.reason };
@@ -88,7 +77,7 @@ export const mutateClientAction = safeAction.inputSchema(clientFormSchema).actio
     return { success: true, id: parsedInput.id };
   }
 
-  const result = await clientsService().create(clientData, loggedUserId, commData);
+  const result = await clientsService().create(clientData, userId, commData);
 
   if (result.isErr()) {
     return { error: result.error.reason };
@@ -100,14 +89,9 @@ export const mutateClientAction = safeAction.inputSchema(clientFormSchema).actio
 });
 
 export async function deleteClientAction(id: string) {
-  const cookieStore = await cookies();
-  const loggedUserId = cookieStore.get(cookieConst.USER_ID)?.value;
+  const { userId } = await verifyActionSession();
 
-  if (!loggedUserId) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const result = await clientsService().delete(id, loggedUserId);
+  const result = await clientsService().delete(id, userId);
 
   if (result.isErr()) {
     return { error: result.error.reason };
